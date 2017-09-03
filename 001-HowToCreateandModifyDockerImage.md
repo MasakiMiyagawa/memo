@@ -1,58 +1,49 @@
-[Ubuntu 14.04ltsのDockerイメージの作成]
-1. debootstrapのインストール
+# [Ubuntu 14.04ltsのDockerイメージの作成]
+# 1. debootstrapのインストール
 	#aptitude install debootstrap
 
-2. schrootのインストール(不要?)
+# 2. schrootのインストール(不要?)
 	#aptitude install schroot
 
-# このやり方はダメだった。chrootのエラーになる
-# 2. インストールするisoイメージのマウント
-#	#mount -t iso9660 -o ro,loop=/dev/loop0 \
-#		../ubuntu-ja-14.04-desktop-i386.iso <マウント先パス>
-#
-# 3. debootstrapの実行
-#	#debootstrap --arch i386 trusty <Target Dir> iso:<iso dir>
-
-3. debootstarpの実行
-	#debootstrap --variant=buildd --arch i386 \
-		trusty <Target Dir> http://archive.ubuntu.com/ubuntu/
+# 3. debootstarpの実行
+	#debootstrap --variant=buildd --arch i386 trusty <Target Dir> http://archive.ubuntu.com/ubuntu/
 
 	*1:trustyはhttp://archive.ubuntu.com/ubuntu/distsにあるディレクトリ名
 	*2:trusty = 14.04lts
 
-4. 古いdockerのuninstall
+# 4. 古いdockerのuninstall
 	#aptitude remove docker
 
-5. Docker.ceのインストール
+# 5. Docker.ceのインストール
 	wget -qO- https://get.docker.com/ | sh
 	*2:https://get.docker.com/からスクリプトをDLしてshで実行。(aptの実行)
 
-6. Dockerの設定
+# 6. Dockerの設定
 	#usermod -aG docker miyagawa
 	dockerグループを作ってsudo権限を持つユーザに付与
 	#/etc/init.d/docker restart
 
-7. Dockerイメージの生成(sha256が出力される)
+# 7. Dockerイメージの生成(sha256が出力される)
 	#tar -c . | docker import - ubuntu-14.04lts-i386
 	sha256:f84346eea18d468a859427e2c95f9bf58453114545f7eb5d5e56bc31dd9a5baf
 	
-8. Dockerイメージを使ったコマンド実行
+# 8. Dockerイメージを使ったコマンド実行
 	$docker run ubuntu-14.04lts-i386 ls
 
-9. コンテナへのログイン
+# 9. コンテナへのログイン
 	$docker run -it ubuntu-14.04lts-i386 /bin/bash
 	コンテナはイメージをインスタンス化したものと考えられる。
 	ここでrootfsを捜査しただけではイメージに反映されない。
 	docker psでコンテナが参照できる。
 
-10. chrootで色々やったあとイメージを作る
+# 10. chrootで色々やったあとイメージを作る
 10.1.#chroot <TargetDir> /bin/bash
 10.2.いろいろ設定
 	例：useradd miyagawa; apt-get install aptitude 等
 10.3.imageの生成
 	#tar -c . | docker import - ubuntu-14.04lts-i386
 
-11. docker commitで更新されたimageの複製
+# 11. docker commitで更新されたimageの複製
 	http://qiita.com/mats116/items/712575dc50513dfdf0a2
 11.1. コンテナの起動
 	#docker run -i -t -d --name="default" <image名> /bin/bash
@@ -68,3 +59,12 @@
 11.7. アタッチ
 	#docker attach newtag
 
+/* 
+ * このやり方はダメだった。chrootのエラーになる
+ * 2. インストールするisoイメージのマウント
+ *	#mount -t iso9660 -o ro,loop=/dev/loop0 \
+ *		../ubuntu-ja-14.04-desktop-i386.iso <マウント先パス>
+ *
+ * 3. debootstrapの実行
+ *	#debootstrap --arch i386 trusty <Target Dir> iso:<iso dir>
+ */
