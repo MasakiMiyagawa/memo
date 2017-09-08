@@ -1,7 +1,6 @@
 # YoctoProject学習: レシピの作り方入門
 ## 参考
 https://www.slideshare.net/iwamatsu/ss-31662659  
-# ビルド環境に含まれるレイヤーはなにか知る
 ## layerを作る方法
 '$git clone git://git.yoctoproject.org/poky'  
 '$git checkout -b pyro origin/pyro'  
