@@ -1,4 +1,64 @@
-# YoctoProject学習1 arm64 qemuで動作させる
+# YoctoProject学習: レシピの作り方入門
+## 参考
+https://www.slideshare.net/iwamatsu/ss-31662659  
+# ビルド環境に含まれるレイヤーはなにか知る
+## layerを作る方法
+'$git clone git://git.yoctoproject.org/poky'  
+'$git checkout -b pyro origin/pyro'  
+'cd poky'  
+'scripts/yocto-layer create my-recipes'
+## ビルド対象にレイヤを加える方法
+build/conf/local.confのBB_LAYERSに追加レイヤを書く  
+bitbakeすると依存レイヤのチェックが行われる。都度探す。   
+## recipeに含まれるtaskはなにかを調べる方法
+'bitbake -c listtasks <recipe name>'  
+例：busyboxの場合  
+'bitbake -c listtasks busybox'  
+## ビルド環境に含まれるレイヤーはなにか知る
+'bitbake-layers show-layers'  
+## レイヤに含まれるレシピをチェック
+'bitbake-layers show-recipes | grep -A 1 ^example'
+## レシピが含まれるレイヤーをチェック
+'bitbake-layers show-recipes example'
+## レシピの状態(bbappendで変更されているもの)を確認する方法
+'bitbake-layers show-appends'
+## downloadディレクトリの指定方法
+build/conf/local.confのDL_DIRを指定
+## 特定のレシピのworkを消去+タスクの初期化
+'bitbake <recipe-name> -c cleansstate'
+## レシピに出てくる変数の意味
+* PR: レシピレビジョン 
+* PN: レシピ名 .bbappendはPN,PVが一致していると追加される
+* PV: レシピバージョン .bbappendはPN,PVが一致していると追加される
+* DEPENDS: レシピのビルドに必要なレシピ
+* RDEPENDS: レシピ成果物実行に必要なレシピ
+* EXTRA_OECONF: configure実行オプション
+* EXTRA_OEMAKE: make実行オプション
+## レシピのタスクを上書きするとき
+### bbファイルまたはbbappendファイルにてdo_configureを上書きする例
+	do_configure() {
+		echo "Override do_configure"
+	}
+### bbファイルまたはbbappendファイルにてdo_configureの前に処理を追加する例
+	do_configure_pretend() {
+		echo "Pretend do_configure"
+	}
+### bbファイルまたはbbappendファイルにてdo_configureの前に処理を追加する例
+	do_configure_append() {
+		echo "Append do_configure"
+	}
+## 自作タスクを定義する
+### do_configureの前に実行されるdo_mytask_a()
+	do_mytask_a() {
+		echo "new task"
+	}
+	addtask mytask_a before do_configure
+### do_configureの後に実行されるdo_mytask_b()
+	do_mytask_b() {
+		echo "new task"
+	}
+	addtask mytask_b before do_configure
+# YoctoProject学習: arm64 qemuで動作させるBSPを追加
 ## 参考
 http://wiki.yoctoproject.org/wiki/Transcript:_Using_the_Yocto_BSP_tools_to_create_a_qemu_BSP
 ## qemu-system-aarch64(ARM64)で動作するrootfsイメージをbuildする
