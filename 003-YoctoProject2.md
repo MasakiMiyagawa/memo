@@ -1,6 +1,44 @@
 # 参考URL
 http://www.yoctoproject.org/docs/2.3.1/bitbake-user-manual/bitbake-user-manual.html
- 
+# Chapter 1. Overview
+## 1.1.Introduction
+## 1.2.History and Goals
+## 1.3.Concepts
+  BitBakeはPythonで書かれたプログラム。GNU Makeがmakefileを入力としてタスクを実行するのと同様レシピを入力としてタスクを実行する。
+## 1.3.1.Recipes
+  .bb,.bbappendファイル。
+## 1.3.2.Configuration Files
+　.confファイル。ビルド対象マシンアーキテクチャの指定、コンパイラオプション、配布オプションなど。
+## 1.3.3.Classes
+  .base .bbclassファイル。メタデータ間でのデータ共有に用いる。フェッチ、アンパック、コンパイルなどの標準タスクの動作が定義されている。プロジェクトで開発されたクラスによってオーバーライドされることがある。
+## 1.3.4.Layers
+  confディレクトリを持つ親ディレクトリ。
+## 1.3.5.Appendfiles
+  .bbappendのワイルドカード記法  
+`busybox_1.21.%.bbappend`  
+は以下にマッチする。
+- busybox_1.21.1.bb  
+- busybox_1.21.2.bb  
+- busybox_1.21.3.bb  
+## 1.4.Obtaining Bitbake
+## 1.5.The BitBake Command
+オプションの表示  
+`$ bitbake -h`  
+依存関係グラフの表示  
+`$ bitbake -g`  
+## 1.5.1.Usage and syntax
+## 1.5.2.Example
+単一のレシピに対してタスクを実行(依存関係無視)  
+`$ bitbake -b foo_1.0.bb`  
+一連のレシピファイルに対するdo_cleanの実行  
+`$ bitbake -c clean foo`
+依存関係グラフの生成。fooが依存するレシピのグラフを表示。virutal/kernelとeglibcは省略。
+`$bitbake -g -Ivirtual/kernel -I egilbc foo`  
+生成される4つのファイル  
+- package-depends.dot : Graphizで表示できるランタイムターゲットの依存関係  
+- pn-depends.dot : レシピ間の依存関係を表示  
+- task-depends.dot : タスク間の依存関係  
+- pn-buildlist : ビルドされるターゲットのシンプルなリストを表  
 # Chapter 2. Execution
 　BitBakeを走らせる主要な目的はimageやkernelやSDKのアウトプットを得ることである。もちろんBitBakeコマンドにオプションを加えて実行することで、単一のレシピのコンパイル、クリアデータのキャプチャ、実行環境の情報取得等も可能である。このチャプタではImageをつくるまでの最初から最後までのBitBakeの実行プロセスを記述する。プロセスは以下のコマンドで起動する。  
 `$ bitbake <target>`
