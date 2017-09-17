@@ -8,14 +8,17 @@ http://www.yoctoproject.org/docs/2.3.1/bitbake-user-manual/bitbake-user-manual.h
 　まず最初にBitBakeが行うことはmetadataのコンフィグレーションのパースである。metadataの基本コンフィグレーションはbblayers.confファイルにあり、BitBakeが認識すべきlayerを定義する。さらにすべてのlayerに配置されたlayer.confファイル及びbitbake.confファイルが基本コンフィグレーションである。   
 - Recipes: 特定のソフトウェアの詳細
 - Class Data:共通のビルド情報のアブストラクト(e.g. どのようにLinux Kernelをビルドするかなど)
-- Configuration Data: MACHINE依存の設定、ポリシー定義など
+- Configuration Data: MACHINE依存の設定、ポリシー定義など  
+
 layerに配置されているlayer.confはBBPATHやBBFILESなど値を設定するために使用する。BBPATHはconfやclassディレクトリの下にあるconfigurationファイルやclassファイルを探索するために用いられる。BBFILESはrecipe(.bb and .bbappend)を探索するために用いられる。bblayers.confが存在しない場合、bitbakeはBBPATHやBBFILESは環境変数に定義されているとみなす。  
 　次にbitbake.confはBBPATHいよって探索される。bitbake.confはincludeやrequireディレクティブを用いて他のコンフィグレーションを設定に含める。  
 コンフィグレーションをパースするためにBitBakeは以下に含まれる定数をみる。  
+
 - BB_ENV_WHITELIST
 - BB_PRESERVE_ENV
 - BB_ENV_EXTRAWHITE
-- BITBAKE_UI
+- BITBAKE_UI  
+
 　環境変数がどのようにBitBakeの実行環境に渡されるかは"Passing Information Into the Build Task Environment"を参照。  
 　基本コンフィグレーションmetadataはグローバルであるため、すべてのレシピのタスク実行に影響を与える。  
 　BitBakeはconf/bblayers.confから探索を開始し、このファイルのBBLAYERSにはスペースで区切られたlayerディレクトリのリストが記述されている。  
@@ -100,12 +103,16 @@ do_configure[postfuncs] += "autotools_postconfigure"
 　他の問題はスクリプトが呼び出されないシェル関数を持っている可能性である。インクリメンタルなビルドはシェル関数の依存関係を発見するコードを持つ。このコードは動作するスクリプトを最小のセットに切り出す役割を持ち、呼び出されない可能性がある関数の問題を軽くしたうえ、スクリプトの可読性を向上している。  
   シェルスクリプトについては一定の解決方法を導き出しているが、Pythonのタスクについてはどうか。同じアプローチを適用してもPhthonの場合、より困難である。あるPythonのタスクが他のどのPython関数を呼び出すのか判断しなくてはならない。重複するが、インクリメンタルなビルドは関数・変数の依存関係を解決し、タスクのインプットとなるChecksumを生成する。
   ワーキングディレクトリのように何らかの依存関係が無視されてほしいケースは祖納する。このようなケースではビルドプロセスに対し以下のように無視する依存関係を指定できる。   
-`PACKAGE_ARCHS[vardepsexclude]="MACHINE"`
+`PACKAGE_ARCHS[vardepsexclude]="MACHINE"`  
+
   この例ではPACKAGE_ARCHSがMACHINEに依存しないように設定されている。PACKAGE_ARCHSとMACHINEの依存関係が切られている。MACHINEが変更されてもPACKAGE_ARCHの入力Checksumは変更されないため、MACHINEの変更によりPACKAGE_ARCHSに依存するものがPACKAGE_ARCHSが変更されたと見なさなくなる。
   同様にBitBakeが発見できない依存関係を追加するには以下である。例えばinline-Pythonの場合。
-`PACKAGE_ARCHS[vardeps]="MACHINE"
+`PACKAGE_ARCHS[vardeps]="MACHINE"`  
+
   meta/classes/distutils3.bbclassではdistutils3_do_compileがMACHINEに依存していないことを明記している。
-`distutils3_do_compile[vardepsexclude] = "MACHINE"`
+
+`distutils3_do_compile[vardepsexclude] = "MACHINE"`  
+
   このセクションではタスクへの直接入力について言及してきたが、基本はbasehashを用いるのである。しかしながら、直接入力ではない依存関係(すでにビルドディレクトリでビルドされたものなど)が存在する。特定のタスクのためのChecksumやSignatureはそのタスクが依存するすべてのタスクのハッシュが追加されなければならない。どの依存関係が用いられるかはポリシーで決定することだが、その効果はbasehashとタスクの依存関係のhashを混ぜあわせるマスターChecksumを生成することである。
   コードレベルでは、basehashとタスクの依存関係のhash両方に影響する方法は複数ある。BitBakeコンフィグレーションファイルでは、BitBakeにbasehashを定義するためのいくつかの追加情報を渡すことができる。以下のステートメントは依存関係から除外されるグローバル変数を定義するもである(meta/conf/bitbake.confより)。この例ではワーキングディレクトリTMPDIRが除外されていることがわかる。
 ```
@@ -116,9 +123,11 @@ BB_HASHBASE_WHITELIST ?= "TMPDIR FILE PATH PWD BB_TASKHASH BBPATH BBSERVER DL_DI
     CCACHE_DIR EXTERNAL_TOOLCHAIN CCACHE CCACHE_NOHASHDIR LICENSE_PATH SDKPKGSUFFIX \
     WARN_QA ERROR_QA WORKDIR STAMPCLEAN PKGDATA_DIR BUILD_ARCH SSTATE_PKGARCH \
     BB_WORKERCONTEXT BB_LIMITEDDEPS extend_recipe_sysroot DEPLOY_DIR"
-```
+```  
+
 　依存タスクのハッシュが依存関係のチェインに含まれるかの決定ルールは、Pythonによりより複雑で一般的に解決される。meta/lib/oe/sstatesig.pyは2つの例を示しており、さらにユーザがどのようにユーザ自身のポリシーをビルドシステムに組み込むかを描いている。このファイルは2つの基本的なシグネチャージェネレータをていぎしている　(OEBasig,OEBasicHash)。デフォルトではダミーのnoopシグネチャハンドラがBitBakeにより有効化される。これは振る舞いが以前のバージョンから変更されていないことを意味している。OE-COreは"OEBasicHash"シグネチャハンドラを以下のbitbake.confファイルのせっていにより使用する。  
-`BB_SIGNATURE_HANDLER ?= "OEBasicHash"`
+`BB_SIGNATURE_HANDLER ?= "OEBasicHash"`  
+
 
   OEBasicHashはOEBasicと同様であるがstampファイルハッシュする機能を保持している。結果として、タスクのhashを変更するmetadataの変更が、タスクの再起動を自動的に発生させるのである。  
   これらのシグネチャジェネレータの結果が依存関係を済々し、ハッシュ情報がビルドのために歌謡であることは注目すべきである。これらの情報は以下を含む。
