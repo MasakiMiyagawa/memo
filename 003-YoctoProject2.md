@@ -287,17 +287,76 @@ AはXとなりA2はYとなる。
 OVERRIDEを適用すると、違いが生じる。fooがOVERRIDEのリストに存在する場合、'A_foo="X"'はOVERRIDE条件fooが示された場合、Aに"X"を代入と解釈され、AはXとなる。
 
 ## 3.3. Sharing Functionality
+  BitBakeはmetadataがincludeファイル(.inc)やクラスファイル(.bbclass)を用いてのデータ共有を許容している。複数のレシピで共有したいタスクや共通機能を定義したい場合、.bbclassファイルを定義し、inheritディレクティブでレシピがclassを継承するようにレシピを書く。このセクションではBitBakeがレシピ間で機能を共有する仕組み、特にinclude,inherit,INHERIT,requireディレクティブについて説明する。
 ### 3.3.1. Locating Include and Class Files
+  BitBakeはincludeやclassファイルの探索のためにBBPATHを使用する。BitBakeにincludeファイルやclassファイルを見つけさせるため、それらはclassesサブディレクトリに存在する必要がある。
+`meta/classes`や`meta-poky/classes`等
 ### 3.3.2. inherit Directive
+  レシピやclassを書いたら、inheritディレクティブでクラスの機能を継承できる。inheritはレシピ(bb)またはクラスファイル(.bbclass)にしか適用できない。inheritはなんのクラスの機能がレシピによって要求されるかを示している。例えば以下の例はautotoolsの機能をレシピから使用することが可能になることを示している。
+`inherit autotools`  
+このケースではBitBakeはclasses/autotools.bbclassを探しだす。
 ### 3.3.3. include Directive
+  BitBakeはincludeディレクティブを理解する。このディレクティブによりBitBakeが指定されたどのようなファイルでもパースする。includeディレクティブは相対パスを指定されない限り、Makeと同等である。相対パスを指定した場合、BitBakeはBBPATH直下を探索し最初に見つかったファイルをincludeする。includeディレクティブはエラーを出力しないのでrequireを使用したほうが良い！！！
 ### 3.3.4. require Directive
+  includeディレクティブのパースエラー検出版。
 ### 3.3.5. INHERIT Configuration Directive
+  .confファイルからbbclassを継承するためには大文字のINHERITを使用する。
 ## 3.4. Functions
+  BitBakeは以下のタイプのFunctionをサポートする。
+- Shell Function  
+- BitBake Style Python Function
+- Python Function
+- Anonymous Python Function.
 ### 3.4.1. Shell Functions
+  シェルスクリプトで書かれた関数である。関数・タスク・関数タスク両方として動作する。shellのプログラミングルールに従うひつようがある。スクリプトは/bin/shによって実行される。
+```
+	some_function () {
+		echo "Hello World"
+	}
+```
 ### 3.4.2. BitBake Style Python Functions
+  Pythonで記述され、BitBakeにより実行またはbb.build.exec_func()にて他のPython functionとして実行される。
+```
+	python some_python_function () {
+		d.setVar("TEXT", "Hello World")
+		print d.getVar("TEXT", True)
+	}
+```
 ### 3.4.3. Python Functions
+他のPython codeに実行されるPythonで書かれたコード
+```
+	def get_depends(d):
+		if d.getVar('SOMECONDITION', True):
+			return "dependencywithcond"
+		else:
+			return "dependency"
+	SOMECONDITION = "1"
+	DEPENDS = "${@get_depends(d)}"
+```  
+Python Functionは  
+- 引数をモテる
+- BitBakeのデータストアが使えない。パラメタとして渡す必要がある。
 ### 3.4.4. Anonymous Python Functions
+```
+	python __anonymous() {
+		if d.getVar('SCMEVAR', True) == 'value':
+			d.setVar('ANOTHERVAR', 'value2')
+	}
+```  
+anonymousはオプショナル↓   
+```
+	python () {
+		if d.getVar('SCMEVAR', True) == 'value':
+			d.setVar('ANOTHERVAR', 'value2')
+	}
+```
+  このPython関数は他のPython関数とは異なり解析時に実行される。
+d.getVarやd.setVarで変数を解析時に読みだしたり切り替えることができる。  
+bitbakeの文法に依存しない。
+
 ### 3.4.5. Flexible Inheritance for Class Functions
+  未読です
+
 ## 3.5. Tasks
 ### 3.5.1. Promoting a Function to a Task
 ### 3.5.2. Deleting a Task
