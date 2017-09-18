@@ -185,4 +185,102 @@ BB_HASHBASE_WHITELIST ?= "TMPDIR FILE PATH PWD BB_TASKHASH BBPATH BBSERVER DL_DI
   すでに述べたように、成果物はタスク以上をカバーできる。例えば、もし、あなたがすでにコンパイルされたバイナリを持っていたら、コンパイラを得ることは無意味である。この問題を扱うため、BitBakeはすべての成功したsetsceneタスクがタスクの依存関係を知る必要があるか否かを知るために、BB_SETSENE_DEPVALIDを呼び出す。  
   最後にすべてのsetsceneタスクが実行された後、BitBakeはBB_SETSCENE_VERIFY_FUNCTIONのリストをBitBkaeが"coverd"と判断したタスクとともに呼びだす。metadataはリストが正しい事を確認し、設定結果に関係なく特定のタスクを実行することをBitBakeに通知できる。この詳細はTask Checksums and Setsceneセクションに記載されている。
 
-
+# 3.Syntax and Operators
+## 3.1. Basic Syntax
+## 3.1.1. Basic Variable Setting
+変数に値を代入する  
+`VARIABLE = "value"`  
+スペースは保持される  
+`VARIABLE = " value"`  
+空値にしたければ空の文字列を代入する。  
+`VARIABLE = ""`
+## 3.1.2. Variable Expansion
+Bashとほぼ同じルールで""の中で変数値を展開する。
+`A = "aval"`  
+`B = "pre${A}post"`  
+この時、Bはpreavalpostである。BはAに依存した変数であるので、この後Aの値が変更されたらそのタイミングでBも変更される。  
+## 3.1.3. Setting a default value (?=)
+ステートメントがパースされたタイミングでAがセットされていなければA=avalになる。  
+`A ?= "aval"`  
+## 3.1.4. Setting a weak default value (??=)
+すべてのパースが完了したタイミングでAがセットされていなければA=avalになる。
+`A ??= "aval"`  
+## 3.1.5. Immediate variable expansion (:=)
+`:=`は変数の拡張を即時に行う。
+`T = "123"`  
+`A := "${B} ${A} test ${T}"  
+`T = "456"`  
+`B = "${T} bval"`  
+`C = "cval"`  
+`C := "${C}append"  
+Cはcvalappendとなる。Aはtest 123となる。   
+## 3.1.6. Appending (+=) and prepending (=+) With Spaces
+`B = "bval"`  
+`B += "additionaldata"`  
+`C = "cval"`  
+`C =+ "test"`   
+Bはbval additionaldataとなり、Cはtest cvalとなる。 
+## 3.1.7. Appending (.=) and Prepending (=.) Without Spaces
+`B = "bval"`  
+`B += "additionaldata"`  
+`C = "cval"`   
+`C =+ "test"`   
+Bはbvaladditionaldataとなり、Cはtestcvalとなる。 
+## 3.1.8. Appending and Prepending (Override Style Syntax)
+`.=`や`.=`と同じ
+`B = "bval"`  
+`B_append = " additional data"`  
+`C = "cval"`  
+`C_prepend = "additional data "`  
+`D = "dval"`  
+`D_append = "addtional data"`  
+この時Bはbval additional data、Cはadditional data cval、Dはdvaladdtional dataとなる。Spaceは入らないので明示する必要あり。
+## 3.1.9. Removal (Override Style Syntax)
+`FOO = "123 456 789 123456 123 456 123 456`  
+`FOO_remove = "123"`  
+`FOO_remove = "456"`  
+`FOO2 = "abc def ghi abcdef abc def abc def"`  
+`FOO2_remove = "abc def"`  
+この時FOOは789 123456となり、FOO2はghi abcdefとなる。
+## 3.1.10. Variable Flag Syntax
+`FOO[a] = "abc"`  
+`FOO[b] = "123"`  
+`FOO[a] += "456"`  
+配列に近い考え方。ただし、要素インデックスは任意。定義、append、pretendなどのシンタックスはオーバーライドシンタックスを除き動作する。 
+この時FOO[a]はabc 456 FOO[B]は123。
+## 3.1.11. Inline Python Variable Expansion
+`DATE = "${@time.strftime('%Y%m%d',time.gmtime())}"
+インラインPythonの結果を変数定義できる。
+## 3.1.12. Providing Pathnames
+パス名を指定する場合"~"は使用できない。
+## 3.2. Condtional Syntax (Overrides)
+### 3.2.1. Conditional Metadata
+### 3.2.2. Key Expansion
+### 3.2.3. Examples
+## 3.3. Sharing Functionality
+### 3.3.1. Locating Include and Class Files
+### 3.3.2. inherit Directive
+### 3.3.3. include Directive
+### 3.3.4. require Directive
+### 3.3.5. INHERIT Configuration Directive
+## 3.4. Functions
+### 3.4.1. Shell Functions
+### 3.4.2. BitBake Style Python Functions
+### 3.4.3. Python Functions
+### 3.4.4. Anonymous Python Functions
+### 3.4.5. Flexible Inheritance for Class Functions
+## 3.5. Tasks
+### 3.5.1. Promoting a Function to a Task
+### 3.5.2. Deleting a Task
+### 3.5.3. Passing Information Into the Build Task Environment
+## 3.6. Variable Flags
+## 3.7. Events
+## 3.8. Variants - Class Extension Mechanism
+## 3.9. Dependencies
+### 3.9.1. Dependencies Internal to the .bb File
+### 3.9.2. Build Dependencies
+### 3.9.3. Runtime Dependencies
+### 3.9.4. Recursive Dependencies
+### 3.9.5. Inter-Task Dependencies
+## 3.10. Accessing Datastore Variables Using Python
+## 3.11. Task Checksums and Setscene
