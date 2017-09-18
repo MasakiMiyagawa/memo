@@ -254,9 +254,38 @@ Bはbvaladditionaldataとなり、Cはtestcvalとなる。
 ## 3.1.12. Providing Pathnames
 パス名を指定する場合"~"は使用できない。
 ## 3.2. Condtional Syntax (Overrides)
+BitBakeはBitBakeによるパースの後どの変数がオーバーライドされるかを制御するOVERRIDESという考え方を使う。
+このセクションではどのようにOVERRIDESを使用するか、OVERRIDESに関連するキーの拡張をいくつかの例とともに記述数r。
 ### 3.2.1. Conditional Metadata
+特定のバージョンの変数を書き換えたりappend,prependを適用したりできる。
+OVERRIDES変数はコロンでセパレートされたリストである。  
+- Selecting a Variable:  
+`OVERRIDES = "architecture:os:machine"`  
+`TEST = "default"`  
+`TEST_os = "osspecific"`  
+`TEST_nooverride = "othiercondvalue"`  
+この例の場合、OVERRIDEはarchitecture,os,machineの3つの条件からなる。TEST自身の値はdefaultで初期化されているが、このレシピ実行時にosが選択されていたら、TESTの値はosspecificと解釈される。
+- Appending and Prepending
+`DEPENDS = "glibc ncurses"`  
+`OVERRIDES = "machine:local"`  
+`DEPENDS_append_machine = "libmod"`  
+machineが選択された時、DEPENDSはglibc ncurses libmodになる。　　
 ### 3.2.2. Key Expansion
+`A${B} = "X"`  
+`B = "2"`  
+`A2 = "Y"`  
+この例ではすべてのパースが完了した後でオーバライドが扱われる前、BitBakeは${B}を2に置き換え、AをA2に拡張する。
+AはXとなりA2はYとなる。
 ### 3.2.3. Examples
+`OVERRIDES = ""`  
+`A = "Z"`  
+`A_foo = "X"`  
+この例は無条件にかつ直ちに追加される変数AをZに設定し、A_fooはXが設定される。なぜならOVERRIDEはまだ適用されていないからである。  
+`OVERRIDES = "foo"`  
+`A = "Z"`  
+`A_foo = "X"`  
+OVERRIDEを適用すると、違いが生じる。fooがOVERRIDEのリストに存在する場合、'A_foo="X"'はOVERRIDE条件fooが示された場合、Aに"X"を代入と解釈され、AはXとなる。
+
 ## 3.3. Sharing Functionality
 ### 3.3.1. Locating Include and Class Files
 ### 3.3.2. inherit Directive
