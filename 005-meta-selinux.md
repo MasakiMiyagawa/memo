@@ -1,5 +1,12 @@
 # meta-selinuxについて
-## 1. core-image-selinux-minimal/core-image-selinuxのビルド
+## 1. 知りたいこと
+
+- object-classの説明
+- access-vectorの説明
+- core-image-minimal等にselinuxを適用するには？
+
+## 2. core-image-selinux-minimal/core-image-selinuxのビルド
+
 - meta-selinuxをgit cloneしておく
 
 - bblaysers.confの変更
