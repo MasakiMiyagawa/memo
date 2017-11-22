@@ -1,19 +1,21 @@
-#meta-selinuxについて
+# meta-selinuxについて
 ## 1. core-image-selinux-minimal/core-image-selinuxのビルド
 - meta-selinuxをgit cloneしておく
 
 - bblaysers.confの変更
 
-BBLAYERS ?= " \
-  /home/miyagawa/poky/meta \
-  /home/miyagawa/poky/meta-poky \
-  /home/miyagawa/poky/meta-yocto-bsp \
-  /home/miyagawa/poky/meta-openembedded/meta-oe \
-  /home/miyagawa/poky/meta-openembedded/meta-networking \
-  /home/miyagawa/poky/meta-openembedded/meta-python \
-  /home/miyagawa/poky/meta-virtualization \
-  /home/miyagawa/poky/meta-selinux \
-  "
+```html:sample
+	BBLAYERS ?= " \
+	  /home/miyagawa/poky/meta \
+	  /home/miyagawa/poky/meta-poky \
+	  /home/miyagawa/poky/meta-yocto-bsp \
+	  /home/miyagawa/poky/meta-openembedded/meta-oe \
+	  /home/miyagawa/poky/meta-openembedded/meta-networking \
+	  /home/miyagawa/poky/meta-openembedded/meta-python \
+	  /home/miyagawa/poky/meta-virtualization \
+	  /home/miyagawa/poky/meta-selinux \
+	  "
+```
 
 - local.confの変更
 PREFERRED_PROVIDER_virtual/refpolicy ?= "refpolicy-targeted"
