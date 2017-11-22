@@ -18,11 +18,13 @@
 ```
 
 - local.confの変更
+
 PREFERRED_PROVIDER_virtual/refpolicy ?= "refpolicy-targeted"
 PREFERRED_VERSION_refpolicy-targeted = "git"
 DISTRO_FEATURES_append = " acl xattr pam selinux"
 
 - core-image-selinux-minimalでビルドした場合
+
 The 'core-image-selinux-minimal' does not automatically relabel the system.
 So you must boot using the parameters "selinux=1 enforcing=0", and then
 manually perform the setup.  Running 'fixfiles -f -F relabel' is available
