@@ -1,17 +1,19 @@
 # meta-selinuxについて
 ## 参考
 [SElinuxのレシピを書く](http://wankomagic.hatenablog.com/entry/2013/05/02/012203)
+[SElinux FAQ Fedora](https://docs-old.fedoraproject.org/en-US/Fedora/13/html/SELinux_FAQ/#faq-entry-local.te)
 
 ## 1. メモ 
 
 ### TOOD
 - object-classの説明
 - access-vectorの説明
-- SDKの作り方
+- 新しいドメイン定義方法
+- SDKの作り方 
 
 ### Q
 - 起動しないとラベリングされないってどういうこと？レシピでラベリングできない？
-- Yoctoでレシピを書き換える方法は？
+- Yoctoでポリシーを書き換える方法は？
 
 ### Idea:アプリケーションがアクセスするオブジェクトを知る方法
 - アプリケーションを何にもアクセスを許さないドメインに突っ込む
@@ -272,3 +274,23 @@ IMAGE_ROOTFS_EXTRA_SPACE_append = "${@bb.utils.contains("DISTRO_FEATURES", "syst
 ### 4.4 bitbake
 
 `$bitbake core-image-minimal`
+
+## 5.teファイルから.ppを作る
+### 5.1 core-image-selinuxにログイン
+
+package-groupを見るとcore-image-selinuxで作成されたイメージはポリシーを記述
+するためのツールが用意されているっぽい。
+
+### 5.2 以下のコマンドでppファイルができる
+
+二段階コンパイルになっている
+hoge.teからhoge.modを生成し、hoge.modからhoge.ppが生成される。
+
+```
+$checkmodule -M -m -o test.mod test.te 
+$semodule_package -o test.pp -m test.mod
+semodule -i test.pp 
+```
+
+[参考](https://docs-old.fedoraproject.org/en-US/Fedora/13/html/SELinux_FAQ/#faq-entry-local.te)
+ 
