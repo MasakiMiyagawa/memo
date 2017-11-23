@@ -172,7 +172,15 @@ allow rpcd_t self:capability dac_read_search;
 
 ポリシーをロードする
 
-`semodule -i test.pp`
+```
+#semodule -i test.pp
+#dmesg
+[ 1603.578150] SELinux: 32768 avtab hash slots, 111836 rules.
+[ 1603.872804] SELinux: 32768 avtab hash slots, 111836 rules.
+[ 1604.034342] SELinux:  6 users, 14 roles, 4587 types, 250 bools, 1 sens, 1024 cats
+[ 1604.034933] SELinux:  127 classes, 111836 rules
+[ 1614.437105] audit: type=1403 audit(1511409255.514:13): policy loaded auid=4294967295 ses=4294967295
+```
 
 ### 3-6. reboot
 
