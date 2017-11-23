@@ -192,3 +192,73 @@ allow rpcd_t self:capability dac_read_search;
 
 拡張子なしになるので注意
 `#semodule -r test`
+
+## 4. core-image-minimalをselinux化する
+
+以下meta-selinux/SELinux-FAQより
+```
+2.2 - How can I add SELinux to my custom images?
+
+If you only want to add SELinux to your custom image, then you should perform
+the following steps:
+
+   1. Add meta-selinux path to BUILDDIR/conf/bblayers.conf file
+
+   2. Add DISTRO_FEATURES_append=" pam selinux" in BUILDDIR/conf/local.conf
+      file.
+
+   3. Add packagegroup-core-selinux to your custom image.
+      For example, if core-image-custom.bb is your building image file, then
+      you should add packagegroup-core-selinux to IMAGE_INSTALL in
+      core-image-custom.bb.
+
+   4. Build your custom image in build directory
+
+       $ bitbake core-image-custom
+```
+
+### 4.1 bblayers.confの設定
+
+```
+BBLAYERS ?= " \
+  /home/miyagawa/poky/meta \
+  /home/miyagawa/poky/meta-poky \
+  /home/miyagawa/poky/meta-yocto-bsp \
+  /home/miyagawa/poky/meta-openembedded/meta-oe \
+  /home/miyagawa/poky/meta-openembedded/meta-python \
+  /home/miyagawa/poky/meta-selinux \
+  "
+```
+
+### 4.2 local.confの追加設定
+
+acl, xattrはなぜいらない？
+書き忘れ？
+
+```
+STRO_FEATURES_append = " pam selinux"
+PREFERRED_PROVIDER_virtual/refpolicy ?= "refpolicy-targeted"
+PREFERRED_VERSION_refpolicy-targeted = "git"
+```
+
+### 4.3 core-image-minimal.bbの修正
+
+````
+$ cat meta/recipes-core/images/core-image-minimal.bb 
+SUMMARY = "A small image just capable of allowing a device to boot."
+
+IMAGE_INSTALL = "packagegroup-core-boot ${CORE_IMAGE_EXTRA_INSTALL}"
+IMAGE_INSTALL += "packagegroup-core-selinux"
+IMAGE_LINGUAS = " "
+
+LICENSE = "MIT"
+
+inherit core-image
+
+IMAGE_ROOTFS_SIZE ?= "8192"
+IMAGE_ROOTFS_EXTRA_SPACE_append = "${@bb.utils.contains("DISTRO_FEATURES", "systemd", " + 4096", "" ,d)}"
+```
+
+### 4.4 bitbake
+
+`$bitbake core-image-minimal`
