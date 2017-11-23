@@ -1,9 +1,11 @@
 # meta-selinuxについて
-## 1. 知りたいこと
+## 1. TODO
 
 - object-classの説明
 - access-vectorの説明
 - core-image-minimal等にselinuxを適用するには？
+- SDKの作り方
+- 起動しないとラベリングされないってありなの？
 
 ## 2. core-image-selinux-minimal/core-image-selinuxのビルド
 
@@ -11,7 +13,7 @@
 
 - bblaysers.confの変更
 
-```html:sample
+```
 	BBLAYERS ?= " \
 	  /home/miyagawa/poky/meta \
 	  /home/miyagawa/poky/meta-poky \
@@ -39,4 +41,33 @@ in this configuration.
 
 `runqemu qemuarm64 bootparams="selinux=1 enforcing=0"` 
 
+## 3. audit2allowを使ってとりあえずすべてのアクセスが通るようにしてみる
 
+1. core-image-selinuxのビルド
+
+2. qemu起動
+
+1回目の起動はrelabelが行われるので必ずpermissiveで起動する模様。
+
+`runqemu qemuarm64 bootparams="selinux=1 enforcing=1" nographic`
+
+2回目の起動(単なる確認本来不要)
+
+loginのドメインがexecできないので、
+これをやるとloginできなくなる。qemuの場合プロセスをkillして一旦止める。
+
+`runqemu qemuarm64 bootparams="selinux=1 enforcing=1" nographic`
+
+3回目の起動
+permissiveで起動する。audit2allowを使ってとりあえず出まくっているdeniedを
+なんとかする。
+
+`runqemu qemuarm64 bootparams="selinux=1 enforcing=0" nographic`
+
+3. audit2allowでどうポリシーを書けばとりあえず通るようになるか調べる
+
+4. audit2allowでppファイルとteファイルを作る
+
+5. ppファイルをロード(恒久的)
+
+6. reboot
