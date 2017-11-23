@@ -190,4 +190,5 @@ allow rpcd_t self:capability dac_read_search;
 
 ### 3-7. ppファイルをアンロード(恒久的)
 
-`#semodule -r test.pp`
+拡張子なしになるので注意
+`#semodule -r test`
