@@ -1,4 +1,7 @@
 # meta-selinuxについて
+## 参考
+[SElinuxのレシピを書く](http://wankomagic.hatenablog.com/entry/2013/05/02/012203)
+
 ## 1. TODO
 
 - object-classの説明
