@@ -187,3 +187,7 @@ allow rpcd_t self:capability dac_read_search;
 今度はenforceでもログインできる
 
 `runqemu qemuarm64 bootparams="selinux=1 enforcing=1" nographic`
+
+### 3-7. ppファイルをアンロード(恒久的)
+
+`#semodule -r test.pp`
