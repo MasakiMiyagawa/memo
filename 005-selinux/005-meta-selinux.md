@@ -12,9 +12,9 @@
 
 ## 2. core-image-selinux-minimal/core-image-selinuxのビルド
 
-- meta-selinuxをgit cloneしておく
+### 2.1 meta-selinuxをgit cloneしておく
 
-- bblaysers.confの変更
+### 2.2 bblaysers.confの変更
 
 ```
 BBLAYERS ?= " \
@@ -22,20 +22,18 @@ BBLAYERS ?= " \
   /home/miyagawa/poky/meta-poky \
   /home/miyagawa/poky/meta-yocto-bsp \
   /home/miyagawa/poky/meta-openembedded/meta-oe \
-  /home/miyagawa/poky/meta-openembedded/meta-networking \
   /home/miyagawa/poky/meta-openembedded/meta-python \
-  /home/miyagawa/poky/meta-virtualization \
   /home/miyagawa/poky/meta-selinux \
   "
 ```
 
-- local.confの変更
+### 2.3 local.confの変更
 
 PREFERRED_PROVIDER_virtual/refpolicy ?= "refpolicy-targeted"
 PREFERRED_VERSION_refpolicy-targeted = "git"
 DISTRO_FEATURES_append = " acl xattr pam selinux"
 
-- core-image-selinux-minimalでビルドした場合
+### 2.4 core-image-selinux-minimalでビルドした場合 auto relabelは動作しない
 
 The 'core-image-selinux-minimal' does not automatically relabel the system.
 So you must boot using the parameters "selinux=1 enforcing=0", and then
@@ -246,7 +244,7 @@ PREFERRED_VERSION_refpolicy-targeted = "git"
 
 ### 4.3 core-image-minimal.bbの修正
 
-````
+```
 $ cat meta/recipes-core/images/core-image-minimal.bb 
 SUMMARY = "A small image just capable of allowing a device to boot."
 
