@@ -2,13 +2,22 @@
 ## 参考
 [SElinuxのレシピを書く](http://wankomagic.hatenablog.com/entry/2013/05/02/012203)
 
-## 1. TODO
+## 1. メモ 
 
+### TOOD
 - object-classの説明
 - access-vectorの説明
-- core-image-minimal等にselinuxを適用するには？
 - SDKの作り方
-- 起動しないとラベリングされないってありなの？
+
+### Q
+- 起動しないとラベリングされないってどういうこと？レシピでラベリングできない？
+- Yoctoでレシピを書き換える方法は？
+
+### Idea:アプリケーションがアクセスするオブジェクトを知る方法
+- アプリケーションを何にもアクセスを許さないドメインに突っ込む
+- Permissiveモードで動かす。
+- audit2allowでteファイルを作る
+- teファイルを読み解き、何にアクセスしたかったのかを知る。
 
 ## 2. core-image-selinux-minimal/core-image-selinuxのビルド
 
