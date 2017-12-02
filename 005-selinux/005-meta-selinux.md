@@ -293,4 +293,192 @@ semodule -i test.pp
 ```
 
 [参考](https://docs-old.fedoraproject.org/en-US/Fedora/13/html/SELinux_FAQ/#faq-entry-local.te)
- 
+
+## 6.サンプルアプリケーションのポリシを作る
+
+### 6.1 折角なのでYoctoで作る
+
+1. レイヤの追加
+
+`scripts/yocto-layer create my-selinux-test`
+
+2. ここにファイルの読み書きをするプログラムを書く
+
+```
+#include <stdio.h>
+#include <unistd.h>
+#define TESTFILE "TESTFILE"
+int main(int argc, char **argv)
+{
+	FILE *fp;
+	char filepath[256] = {0};
+	int err = 0;
+	char buf[256] = {0};
+	
+	if (argc < 2) {
+		printf("You need to specify test dir path.");
+		return -1;
+	}
+
+	sprintf(filepath, "%s/%s", argv[1], TESTFILE);
+
+	printf("Test 1 : Open test file write mode\n");
+	fp = fopen((const char *)filepath, "w");
+	if (!fp) {
+		perror("fopen(w):");
+		return -1;
+	}
+	
+	printf("Test 2 : write test\n");
+	err = fprintf(fp, "Hello! this statement is written by %s", __FILE__);
+	if (err < 0) {
+		perror("fprintf(w):");
+		return -1;
+	}
+	
+	fclose(fp);
+	fp = NULL;
+	
+	printf("Test 3 : Open test file read mode\n");
+	fp = fopen((const char *)filepath, "r");
+	if (!fp) {
+		perror("fopen(r):");
+		return -1;
+	}
+
+	printf("Test 4 : read test\n");
+	err = fread(buf, 1, sizeof(buf), fp);
+	if (err < 0) {
+		perror("fread:");
+		return -1;
+	}
+	printf("Test 5 : checking file \"%s\"\n", buf);
+	
+	fclose(fp);
+	fp = NULL;
+	
+	printf("Test 6 : unlink test\n");
+	err = unlink((const char *)filepath);
+	if (err < 0) {
+		perror("unlink:");
+		return -1;
+	}
+
+	return 0;
+}
+```
+
+3.IMAGE_INSTALL_appendにレシピを加える @local.conf
+
+`IMAGE_INSTALL_append = " selinux-test-app"`
+
+4.SELinux化されたcore-image-minimalで実行する
+
+helloworld(Yocto-layerのデフォルトから変更していない名前)はgetty_tドメイン
+で動作している。getty_tドメインにはuser_home_dir_tタイプのディレクトリ
+に対するwrite, addname, remove_nameの許可がなく、user_home_dir_tタイプの
+ファイルへのcreate,getattr,read,unlinkの許可もない。
+```
+# dmesg | grep helloworld
+[   82.837532] audit: type=1400 audit(1512189754.985:27): avc:  denied  { write } for  pid=300 comm="helloworld" name="root" dev="vda" ino=3764 scontext=system_u:system_r:getty_t:s0 tcontext=unconfined_u:object_r:user_home_dir_t:s0 tclass=dir permissive=1
+[   82.846498] audit: type=1400 audit(1512189754.993:28): avc:  denied  { add_name } for  pid=300 comm="helloworld" name="TESTFILE" scontext=system_u:system_r:getty_t:s0 tcontext=unconfined_u:object_r:user_home_dir_t:s0 tclass=dir permissive=1
+[   82.852553] audit: type=1400 audit(1512189754.995:29): avc:  denied  { create } for  pid=300 comm="helloworld" name="TESTFILE" scontext=system_u:system_r:getty_t:s0 tcontext=system_u:object_r:user_home_dir_t:s0 tclass=file permissive=1
+[   82.857479] audit: type=1400 audit(1512189755.005:30): avc:  denied  { write open } for  pid=300 comm="helloworld" path="/home/root/TESTFILE" dev="vda" ino=5978 scontext=system_u:system_r:getty_t:s0 tcontext=system_u:object_r:user_home_dir_t:s0 tclass=file permissive=1
+[   82.863437] audit: type=1400 audit(1512189755.010:31): avc:  denied  { getattr } for  pid=300 comm="helloworld" path="/home/root/TESTFILE" dev="vda" ino=5978 scontext=system_u:system_r:getty_t:s0 tcontext=system_u:object_r:user_home_dir_t:s0 tclass=file permissive=1
+[   82.869519] audit: type=1400 audit(1512189755.012:32): avc:  denied  { read } for  pid=300 comm="helloworld" name="TESTFILE" dev="vda" ino=5978 scontext=system_u:system_r:getty_t:s0 tcontext=system_u:object_r:user_home_dir_t:s0 tclass=file permissive=1
+[   82.876532] audit: type=1400 audit(1512189755.017:33): avc:  denied  { remove_name } for  pid=300 comm="helloworld" name="TESTFILE" dev="vda" ino=5978 scontext=system_u:system_r:getty_t:s0 tcontext=unconfined_u:object_r:user_home_dir_t:s0 tclass=dir permissive=1
+[   82.879523] audit: type=1400 audit(1512189755.018:34): avc:  denied  { unlink } for  pid=300 comm="helloworld" name="TESTFILE" dev="vda" ino=5978 scontext=system_u:system_r:getty_t:s0 tcontext=system_u:object_r:user_home_dir_t:s0 tclass=file permissive=1
+```
+
+### 6.2 とりあえず、getty_tのセキュリティポリシを変更しないで新たなドメインを定義
+
+1.teファイル作成
+
+```
+module helloworld 1.0;
+
+require {
+        attribute domain;
+        attribute file_type;
+        attribute exec_type;
+}
+
+type helloworld_t, domain;
+type helloworld_exec_t, file_type, exec_type;
+type helloworld_data_t, file_type;
+```
+
+module行はcheckmodule -m オプションで必要らしい。
+書かないと以下のエラーがでる。
+
+```
+~ # checkmodule -M -m -o helloworld.mod ./helloworld.te 
+checkmodule:  loading policy configuration from ./helloworld.te
+./helloworld.te:1:ERROR 'Building a policy module, but no module specification found.
+' at token 'type' on line 1:
+
+
+checkmodule:  error(s) encountered while parsing configuration
+```
+
+ちなみに-mオプションは以下の意味があるらしい。
+ポリシーモジュールとは/etc/selinux下にあるポリシーファイルの差分の
+ようなものか。
+
+```
+#checkmodule -h
+  -m         build a policy module instead of a base module
+```
+
+require行も必要になる。書かないと以下のエラーになる。
+```
+~ # checkmodule -M -m -o helloworld.mod ./helloworld.te 
+checkmodule:  loading policy configuration from ./helloworld.te
+./helloworld.te:8:ERROR 'attribute file_type is not declared' at token ';' on line 8:
+type helloworld_exec_t, file_type, exec_type;
+type helloworld_t, domain;
+checkmodule:  error(s) encountered while parsing configuration
+```
+
+.modができたら.ppファイルを作る
+
+`# semodule_package -o helloworld.pp -m helloworld.mod`
+
+.ppファイルをインストールする。policy.30のサイズが変化する
+
+```
+# ls -l /etc/selinux/targeted/policy/policy.30 
+-rw-r--r-- 1 root root 2427381 Dec  2 05:59 /etc/selinux/targeted/policy/policy.30
+# semodule -i helloworld.pp 
+# ls -l /etc/selinux/targeted/policy/policy.30 
+-rw-r--r-- 1 root root 2427367 Dec  2 06:01 /etc/selinux/targeted/policy/policy.30
+```
+
+2.fcファイルの作成
+
+```
+/usr/bin/helloworld	--  system_u:object_r:hello_world_exec_t
+/root/helloworldsandbox --  system_u:object_r:hello_world_data_t
+```
+
+/usr/bin/helloworldのセキュリティコンテキストを書き換える
+
+```
+# setfiles ./helloworld.fc /usr/bin/helloworld 
+# ls -Z /usr/bin/helloworld 
+system_u:object_r:hello_world_exec_t:s0 /usr/bin/helloworld
+
+```
+
+この状態でPermissiveモードで動作させるとどうなるか
+
+#.備忘録
+SELinux無効中に作られたファイルにはセキュリティコンテキストが付与されない
+
+```
+~ # ls -Z .
+                                   ? helloworld.fc
+                                   ? helloworld.te
+system_u:object_r:user_home_dir_t:s0 helloworld.txt
+                                   ? helloworldsandbox
+```
