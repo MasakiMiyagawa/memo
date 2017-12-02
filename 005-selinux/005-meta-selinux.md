@@ -6,10 +6,10 @@
 ## 1. メモ 
 
 ### TOOD
-- object-classの説明
-- access-vectorの説明
-- 新しいドメイン定義方法
-- SDKの作り方 
+- SDKの作り方
+- s0ってなに？
+- check_moduleでm4マクロ展開できないの？
+
 
 ### Q
 - 起動しないとラベリングされないってどういうこと？レシピでラベリングできない？
@@ -454,23 +454,116 @@ checkmodule:  error(s) encountered while parsing configuration
 -rw-r--r-- 1 root root 2427367 Dec  2 06:01 /etc/selinux/targeted/policy/policy.30
 ```
 
-2.fcファイルの作成
+この状態でPermissiveモードで動作させるとどうなるか -> authログに変化なし。
+現状のセキュリティポリシの問題は
+1. helloworldのバイナリファイルのfcがbin_tのまま
+2. domain遷移の定義が書かれていない
+ため、helloworldはhelloworld_tで動作しない
+
+ならどうするか。
+
+まずは2から対応する。
+新しいteファイルは以下。
+domain_auto_trans()マクロを使いたいがcheck_moduleコマンドでコンパイルするとき
+はm4マクロが働かないのでとりあえずdomain_auto_trans()の定義をrefpolicyから参照
+し、そのまま書いた。domain_auto_trans()の中身はclass processを使用しているので
+requireに追加しなければならない。(アクセスベクタまで書かなきゃならんのが面倒)
 
 ```
-/usr/bin/helloworld	--  system_u:object_r:hello_world_exec_t
-/root/helloworldsandbox --  system_u:object_r:hello_world_data_t
+module helloworld 1.0;
+require {
+	attribute domain;
+	attribute file_type;
+	attribute exec_type;
+	role system_r;
+	type getty_t;
+	type unlabeled_t;
+	class process
+	{
+        	fork
+        	transition
+        	sigchld # commonly granted from child to parent
+        	sigkill # cannot be caught or ignored
+        	sigstop # cannot be caught or ignored
+        	signull # for kill(pid, 0)
+        	signal  # all other signals
+        	ptrace
+        	getsched
+        	setsched
+        	getsession
+        	getpgid
+        	setpgid
+        	getcap
+        	setcap
+        	share
+        	getattr
+        	setexec
+        	setfscreate
+        	noatsecure
+        	siginh
+        	setrlimit
+        	rlimitinh
+        	dyntransition
+        	setcurrent
+        	execmem
+        	execstack
+        	execheap
+        	setkeycreate
+        	setsockcreate
+       		getrlimit
+	};
+}
+
+
+type helloworld_t, domain;
+type helloworld_exec_t, file_type, exec_type;
+type helloworld_data_t, file_type;
+
+role system_r types helloworld_t;
+
+#domain_auto_trans(getty_t, helloworld_exec_t, helloworld_t)
+type_transition getty_t helloworld_exec_t:process helloworld_t;
+
+```
+これでドメイン遷移するためのteはできた。
+このteファイルはhelloworld_exec_tのタイプを持つ実行ファイルをドメイン遷移
+にするということを以下の文で表している。
+
+`type_transition getty_t helloworld_exec_t:process helloworld_t;`
+
+なおtype_transitionでは遷移元ドメインをgetty_tにしている。
+これはauthログでbashで実行したhelloworldがgetty_tで動作していたから。
+さらに、以下はrole system_rにhelloworld_tのドメインに入る権利を与えている。
+
+`role system_r types helloworld_t;`
+
+次に考えるべきなのはhelloworldにhelloworld_exec_tタイプを与えることだが
+以下で出来た。これは一時的なものらしい。
+
+```
+~ # chcon -t helloworld_exec_t /usr/bin/helloworld 
+~ # ls -Z /usr/bin/helloworld 
+system_u:object_r:helloworld_exec_t:s0 /usr/bin/helloworld
 ```
 
-/usr/bin/helloworldのセキュリティコンテキストを書き換える
+この状態でPermissiveモードで動かした時のログは以下。
+authログは増えているけどhelloworldのドメインが変わっている。
 
 ```
-# setfiles ./helloworld.fc /usr/bin/helloworld 
-# ls -Z /usr/bin/helloworld 
-system_u:object_r:hello_world_exec_t:s0 /usr/bin/helloworld
-
+[   52.942856] audit: type=1400 audit(1512201288.197:18): avc:  denied  { getattr } for  pid=298 comm="chcon" path="/usr/bin/helloworld" dev="vda" ino=534 scontext=system_u:system_r:getty_t:s0 tcontext=system_u:object_r:helloworld_exec_t:s0 tclass=file permissive=1
+[  100.883631] audit: type=1400 audit(1512201336.135:20): avc:  denied  { getattr } for  pid=295 comm="sh" path="/home/root/helloworld.pp" dev="vda" ino=6001 scontext=system_u:system_r:getty_t:s0 tcontext=unconfined_u:object_r:user_home_t:s0 tclass=file permissive=1
+[  100.890497] audit: type=1400 audit(1512201336.142:21): avc:  denied  { getattr } for  pid=295 comm="sh" path="/home/root/helloworldsandbox" dev="vda" ino=5996 scontext=system_u:system_r:getty_t:s0 tcontext=unconfined_u:object_r:user_home_t:s0 tclass=dir permissive=1
+[  111.201166] audit: type=1400 audit(1512201346.453:22): avc:  denied  { execute } for  pid=302 comm="sh" name="helloworld" dev="vda" ino=534 scontext=system_u:system_r:getty_t:s0 tcontext=system_u:object_r:helloworld_exec_t:s0 tclass=file permissive=1
+[  111.209325] audit: type=1400 audit(1512201346.456:23): avc:  denied  { read open } for  pid=302 comm="sh" path="/usr/bin/helloworld" dev="vda" ino=534 scontext=system_u:system_r:getty_t:s0 tcontext=system_u:object_r:helloworld_exec_t:s0 tclass=file permissive=1
+[  111.210814] audit: type=1400 audit(1512201346.457:24): avc:  denied  { transition } for  pid=302 comm="sh" path="/usr/bin/helloworld" dev="vda" ino=534 scontext=system_u:system_r:getty_t:s0 tcontext=system_u:system_r:helloworld_t:s0 tclass=process permissive=1
+[  111.219230] audit: type=1400 audit(1512201346.465:25): avc:  denied  { entrypoint } for  pid=302 comm="sh" path="/usr/bin/helloworld" dev="vda" ino=534 scontext=system_u:system_r:helloworld_t:s0 tcontext=system_u:object_r:helloworld_exec_t:s0 tclass=file permissive=1
+[  111.225112] audit: type=1400 audit(1512201346.476:26): avc:  denied  { use } for  pid=302 comm="helloworld" path="/dev/ttyS0" dev="devtmpfs" ino=8994 scontext=system_u:system_r:helloworld_t:s0 tcontext=system_u:system_r:getty_t:s0 tclass=fd permissive=1
+[  111.231976] audit: type=1400 audit(1512201346.476:27): avc:  denied  { read write } for  pid=302 comm="helloworld" path="/dev/ttyS0" dev="devtmpfs" ino=8994 scontext=system_u:system_r:helloworld_t:s0 tcontext=system_u:object_r:tty_device_t:s0 tclass=chr_file permissive=1
+[  111.238066] audit: type=1400 audit(1512201346.477:28): avc:  denied  { rlimitinh } for  pid=302 comm="helloworld" scontext=system_u:system_r:getty_t:s0 tcontext=system_u:system_r:helloworld_t:s0 tclass=process permissive=1
+[  111.249823] audit: type=1400 audit(1512201346.477:29): avc:  denied  { siginh } for  pid=302 comm="helloworld" scontext=system_u:system_r:getty_t:s0 tcontext=system_u:system_r:helloworld_t:s0 tclass=process permissive=1
+[  111.254870] audit: type=1400 audit(1512201346.482:30): avc:  denied  { read execute } for  pid=302 comm="helloworld" path="/usr/bin/helloworld" dev="vda" ino=534 scontext=system_u:system_r:helloworld_t:s0 tcontext=system_u:object_r:helloworld_exec_t:s0 tclass=file permissive=1
+[  111.259862] audit: type=1400 audit(1512201346.483:31): avc:  denied  { noatsecure } for  pid=302 comm="helloworld" scontext=system_u:system_r:getty_t:s0 tcontext=system_u:system_r:helloworld_t:s0 tclass=process permissive=1
 ```
-
-この状態でPermissiveモードで動作させるとどうなるか
 
 #.備忘録
 SELinux無効中に作られたファイルにはセキュリティコンテキストが付与されない
