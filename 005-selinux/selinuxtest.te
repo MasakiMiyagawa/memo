@@ -1,0 +1,55 @@
+module helloworld 1.0;
+
+require {
+	attribute domain;
+	attribute file_type;
+	attribute exec_type;
+	role system_r;
+	type getty_t;
+	type unlabeled_t;
+	class process
+	{
+        	fork
+        	transition
+        	sigchld # commonly granted from child to parent
+        	sigkill # cannot be caught or ignored
+        	sigstop # cannot be caught or ignored
+        	signull # for kill(pid, 0)
+        	signal  # all other signals
+        	ptrace
+        	getsched
+        	setsched
+        	getsession
+        	getpgid
+        	setpgid
+        	getcap
+        	setcap
+        	share
+        	getattr
+        	setexec
+        	setfscreate
+        	noatsecure
+        	siginh
+        	setrlimit
+        	rlimitinh
+        	dyntransition
+        	setcurrent
+        	execmem
+        	execstack
+        	execheap
+        	setkeycreate
+        	setsockcreate
+       		getrlimit
+	};
+}
+
+
+type helloworld_t, domain;
+type helloworld_exec_t, file_type, exec_type;
+type helloworld_data_t, file_type;
+
+role system_r types helloworld_t;
+
+#domain_auto_trans(getty_t, helloworld_exec_t, helloworld_t)
+type_transition getty_t helloworld_exec_t:process helloworld_t;
+
