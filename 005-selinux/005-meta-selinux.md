@@ -564,6 +564,74 @@ authログは増えているけどhelloworldのドメインが変わっている
 [  111.254870] audit: type=1400 audit(1512201346.482:30): avc:  denied  { read execute } for  pid=302 comm="helloworld" path="/usr/bin/helloworld" dev="vda" ino=534 scontext=system_u:system_r:helloworld_t:s0 tcontext=system_u:object_r:helloworld_exec_t:s0 tclass=file permissive=1
 [  111.259862] audit: type=1400 audit(1512201346.483:31): avc:  denied  { noatsecure } for  pid=302 comm="helloworld" scontext=system_u:system_r:getty_t:s0 tcontext=system_u:system_r:helloworld_t:s0 tclass=process permissive=1
 ```
+#.Yoctoでppファイルを作る
+
+teファイル、ifファイル、icファイルをSRC_URIに追加して
+do_compileでpolicy/modules/appsにコピーされるようにする。
+do_fetch->do_unpackで${WORKDIR}に移動しているので。
+
+```
+--- a/recipes-security/refpolicy/refpolicy_common.inc
++++ b/recipes-security/refpolicy/refpolicy_common.inc
+@@ -12,6 +12,9 @@ RPROVIDES_${PN} += "refpolicy"
+ SRC_URI += "file://customizable_types \
+             file://setrans-mls.conf \
+             file://setrans-mcs.conf \
++            file://selinuxtest.te \
++            file://selinuxtest.if \
++            file://selinuxtest.fc \
+           "
+ 
+ S = "${WORKDIR}/refpolicy"
+@@ -83,6 +86,7 @@ python __anonymous () {
+ }
+ 
+ do_compile() {
++       cp ${WORKDIR}/selinuxtest.* ${S}/policy/modules/apps
+        oe_runmake conf
+        oe_runmake policy
+ }
+```
+
+今度はteファイルではマクロが使える。以下のような感じ。
+
+```
+policy_module(selinuxtest, 1.2.0)
+
+require {
+        attribute domain;
+        attribute file_type;
+        attribute exec_type;
+        role system_r;
+        type getty_t;
+}
+
+type selinux-test_t, domain;
+type selinux-test_exec_t, file_type, exec_type;
+
+role system_r types selinux-test_t;
+domain_auto_trans(getty_t, selinux-test_exec_t, selinux-test_t)
+```
+
+policy_moduleに書かれた名前はteファイルの拡張子をなくした名前と一致していない
+とだめ。
+
+ifファイルはこのモジュールが提供するm4マクロを定義するが、<xml>を書いておかない
+とこれまたコンパイルエラーになるみたい。
+
+```
+# <summary>SElinux Test application</summary>
+```
+
+fcファイルは、/usr/bin/selinux-testがselinux-test_exec_tタイプになるようにして
+いる。このタイプはteファイルでドメイン切り替えのエントリポイントとなっている
+
+```
+usr/bin/selinux-test   --      gen_context(system_u:object_r:selinux-test_exec_t,s0)
+```
+
+以上でcore-image-minimalをビルドすると、selinux-test_tドメインで動作する
+auditログが得られる。あとは、このログがなくなるようにいろいろするだけ。
 
 #.備忘録
 SELinux無効中に作られたファイルにはセキュリティコンテキストが付与されない
