@@ -1,0 +1,105 @@
+# pipelineメモ
+## 1. 適当に書いたpipelineと解説
+
+'''
+// masterで実行する
+node ('master') {
+    // stageの定義
+    stage('Block Check') {
+	// ブロック内部の処理にタイムアウトを設ける。オーバーするとJobは止まる
+        timeout(time: 120, unit: 'SECONDS') {
+            def blk = 'enable'
+            while (blk == 'enable') {
+		// workspaceあるblkfileをcatする。ファイルがなければエラーになる
+		// から、なければStageを継続する。
+		// ここでやりたかったことはローカルファイルを使用した
+		// クリティカルセクションの作成だが、タイミング次第で排他
+		// できないなどの問題が起きた。
+                try {
+		    // returnStdout: trueは戻り地をgroovyの変数に入れるよ
+		    // という意味。入れてないけど。
+                    sh(script: 'cat ./blkfile', returnStdout: true)
+                } catch(all) {
+		    // エラーが起きた(ファイルがない)
+                    blk = 'disable'
+                }
+                
+                if (blk == 'enable') {
+                    echo "blocked by ./blkfile"
+                    sleep 1
+                } else {
+                    echo 'not blocked'
+                }
+            }
+        }
+    }
+
+    stage('Blocking start') {
+        sh 'echo \'true\' > ./blkfile'
+        sleep 20
+    }
+
+    stage('Job call') {
+        echo "${PARENT}"
+        sh (script: 'date -u')
+	// 引数を伴うジョブの呼び出し
+        build job: 'called_from_pipeline', parameters: [
+          string(name: 'TESTPRM1', value:'foo'),
+          string(name:'TESTPRM2', value: 'var')]
+	// 引数を伴わないジョブの呼び出し
+        build job: 'called_from_pipeline_wnoprm'
+    }
+    
+    stage('Blocking clear') {
+        sh 'rm -f ./blkfile'
+    }
+}
+'''
+
+## 2. 排他する
+Pipeline全体の排他は
+Do not allow concurrent builds
+をチェックするとできる。QEMUでJOBを起動してHostから落とす作業を排他できる。
+ただ、FreeStyleと連結できなきゃならないけど。
+
+## 3. 後続ジョブの成否を見る
+
+後続のfreestyleジョブcalled_from_pipelineをexit -1で終わるようにする。
+何もしなければ、後続ジョブがerrorになるとこのpipelineもエラーになるらしい。
+
+### 3.1. 後続ジョブの状態でpipelineの振る舞いを変える方法1 try-catch
+
+throwされるエラーをキャッチしてしまえば、pipelineは続けられる。
+
+'''
+        try {
+            build job: 'called_from_pipeline', parameters: [
+              string(name: 'TESTPRM1', value:'foo'),
+              string(name:'TESTPRM2', value: 'var')]
+        } catch(all) {
+            echo "error1!"
+        }
+        try {
+            build job: 'called_from_pipeline_wnoprm'
+        } catch(all) {
+            echo "error2!"
+        }
+'''
+
+### 3.2. 後続ジョブのエラーで例外がthrowされないようにしてパラメタを見る
+
+なおコメントアウト文を実行するとpipelineもエラーになる。
+
+'''
+    stage('Job call 2') {
+        def ret = build job: 'called_from_pipeline_wnoprm', propagate: false
+        println "${ret.getNumber()} ${ret.getResult()} "
+        // currentBuild.result = ret.getResult()
+    }
+'''
+
+### 3.3. 例外を投げる
+
+'''
+error "hoge!"
+'''
