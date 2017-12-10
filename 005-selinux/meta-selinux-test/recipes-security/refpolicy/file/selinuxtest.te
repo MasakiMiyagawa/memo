@@ -1,0 +1,16 @@
+policy_module(selinuxtest, 1.2.0)
+
+require {
+	attribute domain;
+	attribute file_type;
+	attribute exec_type;
+	role system_r;
+	type getty_t;
+}
+
+type selinux-test_t, domain;
+type selinux-test_exec_t, file_type, exec_type;
+
+role system_r types selinux-test_t;
+domain_auto_trans(getty_t, selinux-test_exec_t, selinux-test_t)
+
