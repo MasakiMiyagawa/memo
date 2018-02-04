@@ -15,7 +15,7 @@ struct result {
 	double tf;	/* Time of invoke to finish (Ts + Tw) */
 };
 
-#define N_SERV_MAX 16
+#define N_SERV_MAX 32
 static struct result result[N_SERV_MAX];
 
 static void dump_result(double ta, double ts, double lamda, double myu)
@@ -46,7 +46,7 @@ static void dump_result(double ta, double ts, double lamda, double myu)
 	}
 }
 
-static int32_t my_kaijo(int32_t n)
+static double my_kaijo(double n)
 {
 	if (n == 0)
 		return 1;
@@ -97,6 +97,7 @@ static void mms(struct result *r)
 	B = calc_B(r);
 	P0 = 1.0f / (B + A * (r->rho / (1.0f - r->rho)));
 	Pn = (A / (1 - r->rho)) * P0;
+	printf("%d A=%lf B=%lf P0=%lf Pn=%lf\n", r->n_serv, A, B, P0, Pn);
 	uWq = ((1.0f / (r->n_serv * (1.0f - r->rho))) * Pn);
 	
 	r->wq = uWq / r->myu;
