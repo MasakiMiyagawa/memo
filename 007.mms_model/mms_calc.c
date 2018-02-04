@@ -53,6 +53,45 @@ static void mm1(struct result *r)
 	r->tf = r->tw + r->ts;
 }
 
+static int32_t my_kaijo(int32_t n)
+{
+	if (n == 1)
+		return 1;
+	return n * my_kaijo(n - 1);
+}
+
+static double calc_B(struct result *r)
+{
+	int32_t i = 0;
+	double ret = 0.0f;
+
+	for (i = 0; i < r->n_serv; i++) {
+		double tmp = 0.0f;
+		int32_t n = i + 1;
+		tmp = pow((r->n_serv * r->rho), n);
+		tmp /= my_kaijo(n);
+		ret += tmp;		
+	}
+	return ret;
+}
+
+static void mms(struct result *r)
+{
+	double A = 0.0f;
+	double B = 0.0f;
+	r->rho = r->lamda / (r->myu * (double)r->n_serv);
+	if (r->rho > 1.0f) {
+		r->tw = -1.0f;
+		r->tf = -1.0f;
+		return;
+	}
+
+	A = pow((r->n_serv * r->rho), r->n_serv);
+	A /= my_kaijo(r->n_serv);
+	B = calc_B(r);
+	printf("%0.5lf %0.5lf\n", A, B);
+}
+
 int main(int argc, char *argv[])
 {
 	double ave_ta = 0.0f;
@@ -84,6 +123,8 @@ int main(int argc, char *argv[])
 		r->ta = ave_ta;
 		if (r->n_serv == 1) {
 			mm1(r);
+		} else {
+			mms(r);
 		}
 	}
 	dump_result(ave_ta, ave_ts, lamda, myu);
