@@ -11,7 +11,7 @@ struct result {
 	double lamda;	
 	double myu;
 	double rho;	
-	double tw;	/* Average wait time (Tw) */
+	double wq;	/* Average wait time (Wq) */
 	double tf;	/* Time of invoke to finish (Ts + Tw) */
 };
 
@@ -28,35 +28,29 @@ static void dump_result(double ta, double ts, double lamda, double myu)
 	printf("====================================================\n");
 	printf("s\tmodel\trho\tTw\t\tTw+Ts\n");
 	for (i = 0; i < N_SERV_MAX; i++) {
-		char model[32];
-		sprintf(model, "%s", 
-			(result[i].n_serv == 1) ? "M/M/1" : "M/M/s");
+		char model[32] = "M/M/s";
+		if (result[i].wq < 0.0f) {
+			printf("%d\t%s\t%.5lf\t*******\t******\n", 
+			result[i].n_serv,
+			model,
+			result[i].rho);
+			continue;
+		}
+
 		printf("%d\t%s\t%.5lf\t%.6lf\t%.6lf\n", 
 			result[i].n_serv,
 			model,
 			result[i].rho,
-			result[i].tw,
+			result[i].wq,
 			result[i].tf);
 	}
 }
 
-static void mm1(struct result *r)
-{
-	r->rho = r->lamda / r->myu;
-	if (r->rho > 1.0f) {
-		r->tw = -1.0f;
-		r->tf = -1.0f;
-		return;
-	}
-
-	r->tw = (r->rho / (1.0f - r->rho)) * r->ts;
-	r->tf = r->tw + r->ts;
-}
-
 static int32_t my_kaijo(int32_t n)
 {
-	if (n == 1)
+	if (n == 0)
 		return 1;
+
 	return n * my_kaijo(n - 1);
 }
 
@@ -65,9 +59,9 @@ static double calc_B(struct result *r)
 	int32_t i = 0;
 	double ret = 0.0f;
 
-	for (i = 0; i < r->n_serv; i++) {
+	for (i = 0; i <= r->n_serv; i++) {
 		double tmp = 0.0f;
-		int32_t n = i + 1;
+		int32_t n = i;
 		tmp = pow((r->n_serv * r->rho), n);
 		tmp /= my_kaijo(n);
 		ret += tmp;		
@@ -75,21 +69,38 @@ static double calc_B(struct result *r)
 	return ret;
 }
 
+static double calc_A(struct result *r)
+{
+	double deno = 0.0f;
+	double mole = 0.0f;
+	mole = pow((r->n_serv * r->rho), r->n_serv);
+	deno = my_kaijo(r->n_serv);
+	return (mole / deno);
+}
+
 static void mms(struct result *r)
 {
 	double A = 0.0f;
 	double B = 0.0f;
+	double P0 = 0.0f;
+	double Pn = 0.0f;
+	double uWq = 0.0f;
+
 	r->rho = r->lamda / (r->myu * (double)r->n_serv);
-	if (r->rho > 1.0f) {
-		r->tw = -1.0f;
+	if (r->rho >= 1.0f) {
+		r->wq = -1.0f;
 		r->tf = -1.0f;
 		return;
 	}
 
-	A = pow((r->n_serv * r->rho), r->n_serv);
-	A /= my_kaijo(r->n_serv);
+	A = calc_A(r);
 	B = calc_B(r);
-	printf("%0.5lf %0.5lf\n", A, B);
+	P0 = 1.0f / (B + A * (r->rho / (1.0f - r->rho)));
+	Pn = (A / (1 - r->rho)) * P0;
+	uWq = ((1.0f / (r->n_serv * (1.0f - r->rho))) * Pn);
+	
+	r->wq = uWq / r->myu;
+	r->tf = r->wq + r->ts;
 }
 
 int main(int argc, char *argv[])
@@ -121,11 +132,7 @@ int main(int argc, char *argv[])
 		r->myu = myu;
 		r->ts = ave_ts;
 		r->ta = ave_ta;
-		if (r->n_serv == 1) {
-			mm1(r);
-		} else {
-			mms(r);
-		}
+		mms(r);
 	}
 	dump_result(ave_ta, ave_ts, lamda, myu);
 	return 0;
