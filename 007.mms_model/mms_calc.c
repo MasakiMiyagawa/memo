@@ -15,7 +15,7 @@ struct result {
 	double tf;	/* Time of invoke to finish (Ts + Tw) */
 };
 
-#define N_SERV_MAX 32
+#define N_SERV_MAX 64
 static struct result result[N_SERV_MAX];
 
 static void dump_result(double ta, double ts, double lamda, double myu)
@@ -26,18 +26,21 @@ static void dump_result(double ta, double ts, double lamda, double myu)
 	printf("lamda (1/Ta) = %.4lf\n", lamda);
 	printf("myu (1/Ts) = %.4lf\n", myu);
 	printf("====================================================\n");
-	printf("s\tmodel\trho\tTw\t\tTw+Ts\n");
+	printf("s\tmodel\trho\t\tTw\t\tTw+Ts\n");
 	for (i = 0; i < N_SERV_MAX; i++) {
 		char model[32] = "M/M/s";
+		if ((result[i].n_serv % 4) && (result[i].n_serv >= 4)) 
+			continue;
+
 		if (result[i].wq < 0.0f) {
-			printf("%d\t%s\t%.5lf\t*******\t******\n", 
+			printf("%d\t%s\t%.6lf\t********\t*******\n", 
 			result[i].n_serv,
 			model,
 			result[i].rho);
 			continue;
 		}
 
-		printf("%d\t%s\t%.5lf\t%.6lf\t%.6lf\n", 
+		printf("%d\t%s\t%.6lf\t%.6lf\t%.6lf\n", 
 			result[i].n_serv,
 			model,
 			result[i].rho,
@@ -97,7 +100,6 @@ static void mms(struct result *r)
 	B = calc_B(r);
 	P0 = 1.0f / (B + A * (r->rho / (1.0f - r->rho)));
 	Pn = (A / (1 - r->rho)) * P0;
-	printf("%d A=%lf B=%lf P0=%lf Pn=%lf\n", r->n_serv, A, B, P0, Pn);
 	uWq = ((1.0f / (r->n_serv * (1.0f - r->rho))) * Pn);
 	
 	r->wq = uWq / r->myu;
