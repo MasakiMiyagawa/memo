@@ -1,0 +1,6 @@
+ sudo aptitude install libwayland-dev
+ sudo aptitude install libegl1-mesa-dev
+ sudo aptitude install libxkbcommon-dev
+ sudo aptitude install libxkbcommon-x11-dev
+
+https://github.com/eyelash/tutorials/blob/master/wayland-egl.c
