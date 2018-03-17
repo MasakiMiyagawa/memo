@@ -11,10 +11,14 @@ void UnSetLdPreload(void)
 int32_t ExecWithLdPreload(int argc, char *argv[])
 {
 	char *mock_lib = NULL;
+	char *ld_preload = NULL;
 	int32_t err = 0;
 
-	if (getenv("LD_PRELOAD"))
+	ld_preload = getenv("LD_PRELOAD");
+	if (ld_preload) {
+		printf("LD_PRELOAD is already set as %s\n", ld_preload);
 		return 0;
+	}
 
 	mock_lib = getenv("MOCK_LIBRARY");
 	if (!mock_lib)
