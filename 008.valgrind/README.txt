@@ -134,4 +134,25 @@ $ valgrind --tool=memcheck --leak-check=full --xml=yes --xml-file=./log.xml --tr
 
 --log-file=./log.txtでログファイル出力できるけどxmlと共存出来ないっぽい。
 
+5. ValgrindMe()
+gcc valgrind_me_main.c valgrind_me.c
+時プロセスをvalgrindの管理下で再起動するサンプル
+./a.outでプロセスはvalgrindで動作する。
+LD_PRELOAD=./preload.so ./a.outでLD_PRELOADも有効
+7の問題のため、valgrindをrootで実行するようにしている。
+rootで実行してもCan't execute setuid/setgid/setcapが出る
 
+6. force_ld_preload.c
+LD_PRELOADを強制してexecするプログラムも試してみたがこれはダメ。
+valgrindで実行した時は常にLD_PRELOADがセットされているから。
+単にLD_PRELOADを追加したいだけなら5の解決方法のほうが良いか。
+LD_PRELOAD is already set as /usr/lib/valgrind/vgpreload_core-amd64-linux.so:/usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so
+
+7. valgrindのcapability
+permission.cは/root/testのファイルをオープンするだけのプログラム。
+#setcap cap_dac_override+ep a.out
+をするとpermission deniedにならない。
+この状態で
+valgrind ./a.outだとpermission deniedとなってしまう。
+Can't execute setuid/setgid/setcap executable: ./a.out
+valgrindはsetcapしたバイナリを正しく実行できない模様。

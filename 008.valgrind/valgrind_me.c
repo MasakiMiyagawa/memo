@@ -30,6 +30,7 @@ int32_t ValgrindMe(int argc, char *argv[])
 	}
 
 	/* Set valgrind's args */
+	_argv[i++] = "sudo";
 	_argv[i++] = "/usr/bin/valgrind";
 	_argv[i++] = "--tool=memcheck";
 	_argv[i++] = "--leak-check=full";

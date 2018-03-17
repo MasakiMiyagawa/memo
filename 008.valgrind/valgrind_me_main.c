@@ -9,4 +9,9 @@ int main(int argc, char *argv[])
 {
 	ValgrindMe(argc, argv);
 	printf("RAND %d\n", rand());
+	{
+		FILE *fp = fopen("/root/test", "w");
+		if (!fp)
+			perror("fopen");
+	}
 }
