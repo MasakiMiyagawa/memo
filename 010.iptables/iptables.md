@@ -4,6 +4,11 @@
 + ipv6をどうするか検討
 + systemd のシャットダウン処理が正しく動くか確認。
 
+# misc
+## systemdについて
++ https://wiki.archlinux.jp/index.php/Systemd#.E9.9B.BB.E6.BA.90.E7.AE.A1.E7.90.86
+
+
 # Yoctoでiptables入のimageを作る
 ## パッケージをイメージに追加する
 
