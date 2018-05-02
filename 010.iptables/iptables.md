@@ -2,6 +2,7 @@
 + レシピ作成
 + systemd enable Yoctoでのやり方を調査
 + ipv6をどうするか検討
++ systemd のシャットダウン処理が正しく動くか確認。
 
 # Yoctoでiptables入のimageを作る
 ## パッケージをイメージに追加する
