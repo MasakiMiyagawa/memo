@@ -1,0 +1,1 @@
+/usr/bin/selinux-test	--	gen_context(system_u:object_r:selinux-test_exec_t,s0)

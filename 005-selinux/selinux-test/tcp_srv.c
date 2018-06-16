@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 	int listen_socket;
 	struct sockaddr_in addr;
 	struct sockaddr_in client;
-	int len;
+	socklen_t len;
 	int sock;
 	uint16_t listen_port = 8000;  
 

@@ -1,0 +1,29 @@
+policy_module(selinuxtest, 1.2.0)
+
+require {
+	attribute domain;
+	attribute file_type;
+	attribute exec_type;
+	role system_r;
+	type unconfined_t;
+}
+
+type tcp_s_t, domain;
+type tcp_c_t, domain;
+type udp_s_t, domain;
+type udp_r_t, domain;
+
+type tcp_s_exec_t, file_type, exec_type;
+type tcp_c_exec_t, file_type, exec_type;
+type udp_s_exec_t, file_type, exec_type;
+type udp_r_exec_t, file_type, exec_type;
+
+role system_r types tcp_s_t;
+role system_r types tcp_c_t;
+role system_r types udp_s_t;
+role system_r types udp_r_t;
+
+domain_auto_trans(unconfined_t, tcp_s_exec_t, tcp_s_t)
+domain_auto_trans(unconfined_t, tcp_c_exec_t, tcp_c_t)
+domain_auto_trans(unconfined_t, udp_s_exec_t, udp_s_t)
+domain_auto_trans(unconfined_t, udp_r_exec_t, udp_r_t)

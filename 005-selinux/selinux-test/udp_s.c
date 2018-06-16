@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 	while (1) {
 		int32_t err = 0;	
 		err = sendto(sock, msg, strlen(msg), 
-			MSG_CONFIRM|MSG_DONTROUTE|MSG_DONTWAIT, 
+			MSG_CONFIRM|MSG_DONTWAIT, 
 			(struct sockaddr *)&addr, sizeof(addr));
 		if (err < 0) {
 			perror("sendto:");

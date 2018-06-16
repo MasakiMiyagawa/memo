@@ -1,0 +1,4 @@
+/home/root/TCP_Server	--	gen_context(system_u:object_r:tcp_s_exec_t,s0)
+/home/root/TCP_Client	--	gen_context(system_u:object_r:tcp_c_exec_t,s0)
+/home/root/UDP_Send	--	gen_context(system_u:object_r:udp_s_exec_t,s0)
+/home/root/UDP_Recv	--	gen_context(system_u:object_r:udp_r_exec_t,s0)
