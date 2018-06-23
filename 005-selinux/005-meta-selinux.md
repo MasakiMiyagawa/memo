@@ -6,14 +6,7 @@
 ## 1. メモ 
 
 ### TOOD
-- SDKの作り方
-- s0ってなに？
-- check_moduleでm4マクロ展開できないの？
 
-
-### Q
-- 起動しないとラベリングされないってどういうこと？レシピでラベリングできない？
-- Yoctoでポリシーを書き換える方法は？
 
 ### Idea:アプリケーションがアクセスするオブジェクトを知る方法
 - アプリケーションを何にもアクセスを許さないドメインに突っ込む
@@ -564,6 +557,8 @@ authログは増えているけどhelloworldのドメインが変わっている
 [  111.254870] audit: type=1400 audit(1512201346.482:30): avc:  denied  { read execute } for  pid=302 comm="helloworld" path="/usr/bin/helloworld" dev="vda" ino=534 scontext=system_u:system_r:helloworld_t:s0 tcontext=system_u:object_r:helloworld_exec_t:s0 tclass=file permissive=1
 [  111.259862] audit: type=1400 audit(1512201346.483:31): avc:  denied  { noatsecure } for  pid=302 comm="helloworld" scontext=system_u:system_r:getty_t:s0 tcontext=system_u:system_r:helloworld_t:s0 tclass=process permissive=1
 ```
+
+
 #.Yoctoでppファイルを作る
 
 teファイル、ifファイル、icファイルをSRC_URIに追加して
