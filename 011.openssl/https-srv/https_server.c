@@ -9,6 +9,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/crypto.h>
+#include <openssl/x509.h>
 
 static SSL_CTX *ctx = NULL;
 static const char crt_file[] = "server.crt";
@@ -31,6 +32,24 @@ static void simple_https_cleanup(void)
 	}
 
 	return;
+}
+
+static int simple_https_verify_callback(int preverify_ok, X509_STORE_CTX *x509)
+{
+	/*
+	 * 独自証明書検証関数のsample実装。
+	 * preverify_ok=0:事前の検証には失敗している
+	 * preverify_ok=1:事前の検証に成功している
+	 * この関数のリターン値により検証結果を上書きできる。
+	 * return 0:検証エラー
+	 * return 1:検証成功
+	 * このサンプル実装ではX509証明書を取得し、署名者名をprintfした後
+	 * 検証を強制的に成功にする。
+	 */
+	printf("%s\n", __func__);
+	X509 *cert = X509_STORE_CTX_get_current_cert(x509);
+	X509_print_fp(stdout, cert);
+	return 1;
 }
 
 static void simple_https_openssl_init(void)
@@ -117,6 +136,9 @@ static void simple_https_service(void)
 			inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 		
 		ssl = SSL_new(ctx);
+		SSL_set_verify(ssl, 
+			SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, 
+			simple_https_verify_callback);
 		SSL_set_fd(ssl, client);
 
 		ret = SSL_accept(ssl);
@@ -142,12 +164,13 @@ static void simple_https_service(void)
 			goto error;
 		}
 
-		SSL_free(ssl);
-		ssl = NULL;
 
 		client = SSL_get_fd(ssl);
 		close(client);
 		client = -1;
+		
+		SSL_free(ssl);
+		ssl = NULL;
 	}
 error:
 	if (ssl)
@@ -162,7 +185,7 @@ error:
 
 int main(int argc, char *argv[])
 {
-	int32_t port = 9999;
+	int32_t port = 443;
 
 	if (argc > 1)
 		port = atoi(argv[1]);
