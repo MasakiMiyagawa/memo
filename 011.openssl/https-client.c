@@ -27,9 +27,17 @@ static char *path = "/pub/linux/kernel/v4.x/ChangeLog-4.9.88";
 
 static int ssl_sample_verify_callback(int preverify_ok, X509_STORE_CTX *x509)
 {
+	/*
+	 * 独自証明書検証関数のsample実装。
+	 * preverify_ok=0:事前の検証には失敗している
+	 * preverify_ok=1:事前の検証に成功している
+	 * この関数のリターン値により検証結果を上書きできる。
+	 * return 0:検証エラー
+	 * return 1:検証成功
+	 * このサンプル実装ではX509証明書を取得し、署名者名をprintfした後
+	 * 検証を強制的に成功にする。
+	 */
 	X509 *cert = X509_STORE_CTX_get_current_cert(x509);
-	printf("%s is called with preverify is %s.\n", __func__,
-				preverify_ok ? "SUCCEEDED" : "FAILED");
 	printf("CERT:name=%s\n", cert->name);
 	return 1;
 }
@@ -86,11 +94,14 @@ static int32_t ssl_sample_init(void)
     		SSL_CTX_free(ctx);
 		return -1;
 	}
-	//SSL_set_verify(ssl, SSL_VERIFY_NONE, ssl_sample_verify_callback);
+	
+	/*
+	 * SSL_set_verifyにより独自の署名検証を行うことができる。
+	 * 検証は第三引数のコールバックで行う。SSL_VERIFY_PEERは
+	 * 署名検証に失敗した場合、SSL_connectをFAITAL ERRORで終了
+	 * させる。
+	 */
 	SSL_set_verify(ssl, SSL_VERIFY_PEER, ssl_sample_verify_callback);
-	//SSL_set_verify(ssl, SSL_VERIFY_PEER, NULL);
-	//SSL_set_verify(ssl, SSL_VERIFY_NONE, NULL);
-
  	if (!SSL_set_fd(ssl, sock)) {
 		perror("SSL_set_fd:");
     		SSL_free(ssl);
