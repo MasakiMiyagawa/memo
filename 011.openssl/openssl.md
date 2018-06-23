@@ -1,4 +1,10 @@
 # openssl
+## 参考
+- https://www.openssl.org/docs/man1.0.2/crypto/PEM_read_X509.html
+- https://stackoverflow.com/questions/5549942/openssl-how-to-read-a-crt-file
+- http://d.hatena.ne.jp/ytakano/20130118/1358504084
+- https://wiki.openssl.org/index.php/Simple_TLS_Server
+- http://blog.sarabande.jp/post/82087204080
 
 ## httpsクライアントを作る
 
