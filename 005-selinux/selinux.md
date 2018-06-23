@@ -1,4 +1,8 @@
 # SELinuxに関するメモ書き
+## TODO
+- neverallowがModulePolicyで使用できないのか確認
+- permisiveがModulePolicyで使用できるか確認
+
 ## AV (Access Vectorルールについて)
 ### 参考
 - http://hetarena.com/archives/1535
