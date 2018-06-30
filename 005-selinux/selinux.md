@@ -87,6 +87,36 @@ policy-version = 30
 # module.  This results in a significant speed-up in policy loading.
 expand-check=1 <== ★これがチェックされていないとインストールできる
 ```
+### neverallow-allowの矛盾はbaseとしてビルドするときは検出される
+modules.confを見るとdomain.teはbaseモジュールとしてビルドされるように見える。
+domain.teにはneverallow文があるので以下のように矛盾するようにし、bitbake
+```
+# Transitions only allowed from domains to other domains
+neverallow domain ~domain:process { transition dyntransition };
+allow domain ~domain:process { transition dyntransition };
+```
+do compileでエラーになることを確認
+ログ配下
+```
+DEBUG: Executing shell function do_compile
+NOTE: make NAME=minimum TYPE=mcs DISTRO=redhat UBAC=n UNK_PERMS=allow DIRECT_INITRC=n SYSTEMD=y MONOLITHIC=n CUSTOM_BUILDOPT= QUIET=y MLS_SENS=0 MLS_CATS=1024 MCS_CATS=1024 tc_usrbindir=/home/miyagawa/poky/selinux-qemu/tmp/work/qemux86-poky-linux/refpolicy-minimum/2.20170204-r0/recipe-sysroot-native/usr/bin OUTPUT_POLICY=31 CC=gcc  CFLAGS=-isystem/home/miyagawa/poky/selinux-qemu/tmp/work/qemux86-poky-linux/refpolicy-minimum/2.20170204-r0/recipe-sysroot-native/usr/include -O2 -pipe PYTHON=/home/miyagawa/poky/selinux-qemu/tmp/work/qemux86-poky-linux/refpolicy-minimum/2.20170204-r0/recipe-sysroot-native/usr/bin/python-native/python conf
+Creating policy.xml
+Updating policy/booleans.conf and policy/modules.conf
+NOTE: make NAME=minimum TYPE=mcs DISTRO=redhat UBAC=n UNK_PERMS=allow DIRECT_INITRC=n SYSTEMD=y MONOLITHIC=n CUSTOM_BUILDOPT= QUIET=y MLS_SENS=0 MLS_CATS=1024 MCS_CATS=1024 tc_usrbindir=/home/miyagawa/poky/selinux-qemu/tmp/work/qemux86-poky-linux/refpolicy-minimum/2.20170204-r0/recipe-sysroot-native/usr/bin OUTPUT_POLICY=31 CC=gcc  CFLAGS=-isystem/home/miyagawa/poky/selinux-qemu/tmp/work/qemux86-poky-linux/refpolicy-minimum/2.20170204-r0/recipe-sysroot-native/usr/include -O2 -pipe PYTHON=/home/miyagawa/poky/selinux-qemu/tmp/work/qemux86-poky-linux/refpolicy-minimum/2.20170204-r0/recipe-sysroot-native/usr/bin/python-native/python policy
+Creating minimum base module base.conf
+Compiling minimum base module
+policy/modules/kernel/domain.te:21:ERROR '~ not allowed in this type of rule' at token ';' on line 9103:
+allow domain ~domain:process { transition dyntransition };
+neverallow domain ~domain:process { transition dyntransition };
+/home/miyagawa/poky/selinux-qemu/tmp/work/qemux86-poky-linux/refpolicy-minimum/2.20170204-r0/recipe-sysroot-native/usr/bin/checkmodule:  error(s) encountered while parsing configuration
+/home/miyagawa/poky/selinux-qemu/tmp/work/qemux86-poky-linux/refpolicy-minimum/2.20170204-r0/recipe-sysroot-native/usr/bin/checkmodule:  loading policy configuration from base.conf
+Rules.modular:98: recipe for target 'tmp/base.mod' failed
+make: *** [tmp/base.mod] Error 1
+ERROR: oe_runmake failed
+WARNING: exit code 1 from a shell command.
+ERROR: Function failed: do_compile (log file is located at /home/miyagawa/poky/selinux-qemu/tmp/work/qemux86-poky-linux/refpolicy-minimum/2.20170204-r0/temp/log.do_compile.25474)
+```
+
 ### base policyとmodule policyの切り分け方は？
 module.confに書かれた内容でbase moduleとしてコンパイルされるのか、policy moduleとしてコンパイルされるのかわかる。
 
