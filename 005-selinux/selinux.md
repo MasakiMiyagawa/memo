@@ -34,7 +34,59 @@ authlogin = module
 ```
 これはリファレンスポリシーにおいてModulePolicyでもneverallowが使用していることを示している。
 公式ドキュメントの誤記？
+試しにneverallow+allowの矛盾が生じる以下のポリシーを作成してみる。
+```
+neverallow unconfined_t user_home_t:file read;
+allow unconfined_t user_home_t:file read;
+```
+モジュールとしてのコンパイルは普通に通る
+baseポリシとしてコンパイル時はエラーになるのか未確認
+```
+$ make HEADERDIR=~/refpolicy-minimum/2.20170204-r0/sysroot-destdir/usr/share/selinux/minimum/include 
+Compiling ubuntu selinuxtest module
+selinuxtest.te:30: Warning: domain_auto_trans() has been deprecated, please use domain_auto_transition_pattern() instead.
+selinuxtest.te:31: Warning: domain_auto_trans() has been deprecated, please use domain_auto_transition_pattern() instead.
+selinuxtest.te:32: Warning: domain_auto_trans() has been deprecated, please use domain_auto_transition_pattern() instead.
+selinuxtest.te:33: Warning: domain_auto_trans() has been deprecated, please use domain_auto_transition_pattern() instead.
+/usr/bin/checkmodule:  loading policy configuration from tmp/selinuxtest.tmp
+/usr/bin/checkmodule:  policy configuration loaded
+/usr/bin/checkmodule:  writing binary representation (version 17) to tmp/selinuxtest.mod
+Creating ubuntu selinuxtest.pp policy package
+rm tmp/selinuxtest.mod.fc tmp/selinuxtest.mod
 
+```
+semodule -i 時にチェックはできる。
+```
+root@qemux86:~# semodule -r selinuxtest
+libsemanage.semanage_direct_remove_key: Unable to remove module selinuxtest at priority 400. (No such file or directory).
+semodule:  Failed!
+root@qemux86:~# semodule -i selinuxtest.pp
+neverallow check failed at /var/lib/selinux/minimum/tmp/modules/400/selinuxtest/cil:30
+  (neverallow unconfined_t user_home_t (file (read)))
+    <root>
+    allow at /var/lib/selinux/minimum/tmp/modules/100/base/cil:4108
+      (allow files_unconfined_type file_type (file (ioctl read write create getattr setattr lock relabelfrom relabelto append unlink link rename execute swapon quotaon mounton execute_no_trans open audit_access)))
+    <root>
+    allow at /var/lib/selinux/minimum/tmp/modules/400/selinuxtest/cil:31
+      (allow unconfined_t user_home_t (file (read)))
+    <root>
+    allow at /var/lib/selinux/minimum/tmp/modules/100/unconfined/cil:246
+      (allow unconfined_t user_home_t (file (ioctl read write create getattr setattr lock append unlink link rename open)))
+
+Failed to generate binary
+semodule:  Failed!
+root@qemux86:~# tail /etc/selinux/semanage.conf 
+# version is necessary.
+policy-version = 30
+
+# By default, semanage will generate policies for the SELinux target.
+# To build policies for Xen, uncomment the following line.
+#target-platform = xen
+
+# Don't check the entire policy hierarchy when inserting / expanding a policy
+# module.  This results in a significant speed-up in policy loading.
+expand-check=1 <== ★これがチェックされていないとインストールできる
+```
 ### base policyとmodule policyの切り分け方は？
 module.confに書かれた内容でbase moduleとしてコンパイルされるのか、policy moduleとしてコンパイルされるのかわかる。
 

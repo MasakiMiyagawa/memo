@@ -6,6 +6,7 @@ require {
 	attribute exec_type;
 	role system_r;
 	type unconfined_t;
+	type user_home_t;
 }
 
 type tcp_s_t, domain;
@@ -22,6 +23,9 @@ role system_r types tcp_s_t;
 role system_r types tcp_c_t;
 role system_r types udp_s_t;
 role system_r types udp_r_t;
+
+neverallow unconfined_t user_home_t:file read;
+allow unconfined_t user_home_t:file read;
 
 domain_auto_trans(unconfined_t, tcp_s_exec_t, tcp_s_t)
 domain_auto_trans(unconfined_t, tcp_c_exec_t, tcp_c_t)
