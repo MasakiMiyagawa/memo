@@ -1,3 +1,4 @@
 include(allow_generator.m4)
-both_directive(file, test1_t, write_perm, test2_t, read_perm)
+both_directive(domain_t, file, test1_t, write_perm, test2_t, read_perm)
+both_directive(domain_t, dir, test3_t, write_perm, test4_t, read_perm)
 

@@ -1,33 +1,24 @@
-define(`vectoradd',`
-	ifelse($#, 1, `
-		define(`ac_vector', ac_vector `$1')
+define(`_both_directive',`
+	allow domain class:$1 $2;
+	neverallow domain class:$1 ~{$2};
+	
+	ifelse($#, 2, `
+		define(`object_type', object_type `$1')
 	',`
-		ifdef(`ac_vector', `
-			define(`ac_vector', ac_vector `$1')
-			typeadd(shift($@))
+		ifdef(`object_type', `
+			define(`object_type', object_type `$1')
+			_both_directive(shift(shift($@)))
 		',`
-			define(`ac_vector', `$1')
-			typeadd(shift($@))
+			define(`object_type', `$1')
+			_both_directive(shift(shift($@)))
 		')
 	')
-	
 ')
 
-define(`typeadd',`
-	ifdef(`object_type', `
-		define(`object_type', object_type `$1')
-		vectoradd(shift($@))
-	',`
-		define(`object_type', `$1')
-		vectoradd(shift($@))
-	')
+define(`both_directive', `
+	define(`domain', `$1')
+	define(`class', `$2')
+	_both_directive(shift(shift($@)))
+	neverallow domain class:~{object_type} *;
+	undefine(`object_type') 
 ')
-
-define(`allow2', `
-	define(`class', `$1')
-	typeadd(shift($@))
-	neverallow class:^{object_type} * 
-')
-
-allow2(file,hoge_t,write,hage_t,read)
-
