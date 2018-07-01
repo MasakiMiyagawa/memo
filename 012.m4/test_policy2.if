@@ -1,0 +1,10 @@
+include(allow_generator2.m4)
+
+allow_section_begin(file, testdom_t)
+add_allow(type1_t, read);
+add_allow(type2_t, write);
+allow_section_end(file, testdom_t)
+
+allow_section_begin(dir, dom_t)
+allow_section_end(dir, dom_t)
+
