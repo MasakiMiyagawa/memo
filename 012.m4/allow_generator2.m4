@@ -7,8 +7,8 @@ define(`allow_section_begin', `
 ')
 
 define(`add_allow', `
-	allow domain class:$1 $2;
-	neverallow domain class:$1 ~{$2};
+	allow domain {$1}:class {$2};
+	neverallow domain {$1}:class ~{$2};
 	ifdef(`object_type', `
 		define(`object_type', object_type `$1')
 	',`
@@ -18,10 +18,10 @@ define(`add_allow', `
 
 define(`allow_section_end', `
 	ifdef(`object_type', `
-		neverallow domain class:~{object_type} *;
+		neverallow domain ~{object_type}:class *;
 		undefine(`object_type') 
 	',`
-		neverallow domain class:* *;
+		neverallow domain *:class *;
 	')
 	
 	ifelse($1, class, `
