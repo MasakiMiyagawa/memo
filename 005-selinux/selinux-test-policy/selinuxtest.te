@@ -1,3 +1,4 @@
+include(allow_generator2.m4)
 policy_module(selinuxtest, 1.2.0)
 
 require {
@@ -24,8 +25,9 @@ role system_r types tcp_c_t;
 role system_r types udp_s_t;
 role system_r types udp_r_t;
 
-neverallow unconfined_t user_home_t:file read;
-allow unconfined_t user_home_t:file read;
+allow_section_begin(file, unconfined_t)
+add_allow(user_home_t, read write)
+allow_section_end(file, unconfined_t)
 
 domain_auto_trans(unconfined_t, tcp_s_exec_t, tcp_s_t)
 domain_auto_trans(unconfined_t, tcp_c_exec_t, tcp_c_t)
