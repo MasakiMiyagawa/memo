@@ -5,7 +5,7 @@ CC ?= gcc
 
 INC_DIR	?= -I${PWD}
 CFLAGS	?= -Wall -O0 -g
-LIBS ?= -lssl -lcrypto -lstdc++
+LIBS ?= -lssl -lcrypto -lstdc++ 
 
 all: ${TARGET}
 

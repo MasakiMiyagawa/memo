@@ -14,6 +14,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/x509.h>
+#include <openssl/evp.h>
 
 static char buf[1024*1024] = {0};
 static const char crt_file[] = "client.crt";
@@ -24,6 +25,55 @@ static SSL *ssl;
 static SSL_CTX *ctx;
 static char *host = "localhost";
 static char *path = "";
+
+static int ssl_simple_cert_cb(SSL *ssl, void *arg)
+{
+	int i;
+	X509 *_x509 = NULL;
+	EVP_PKEY *_pkey = NULL;
+	RSA *rsa;
+	int *flags;
+	FILE* f = fopen(crt_file, "r");
+    	if (f == NULL) {
+		perror("fopen:");
+		exit(-1);
+	}
+        
+	_x509 = PEM_read_X509(f, NULL, NULL, NULL);
+       	if (_x509 == NULL) {
+		fclose(f);
+		perror("PEM_read_X509:");
+		exit (-1);
+	}
+//	X509_print_fp(stdout, _x509);
+	printf("%s\n", __func__);	
+	fclose(f);
+	f = NULL;
+	
+	f = fopen(key_file, "r");
+	if (f == NULL) {
+		perror("flopen:");
+		X509_free(_x509);
+		exit(-1);
+	}
+
+	_pkey = PEM_read_PrivateKey(f, NULL, NULL, NULL);
+	if (_pkey == NULL) {
+		perror("PEM_read_PrivateKey:");
+		X509_free(_x509);
+		fclose(f);
+		exit (-1);
+	}
+
+	fclose(f);
+	f = NULL;
+	SSL_use_certificate(ssl, _x509);
+	rsa = _pkey->pkey.rsa;
+	flags = &(rsa->meth->flags);
+	*flags |= RSA_METHOD_FLAG_NO_CHECK|RSA_FLAG_EXT_PKEY;
+	printf("return %d \n", SSL_use_PrivateKey(ssl, _pkey));
+	return 1;
+}
 
 static int ssl_sample_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
 {
@@ -41,6 +91,7 @@ static int ssl_sample_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
 		perror("PEM_read_X509:");
 		exit (-1);
 	}
+	X509_print_fp(stdout, _x509);
 	
 	fclose(f);
 	f = NULL;
@@ -64,7 +115,7 @@ static int ssl_sample_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
 	fclose(f);
 	f = NULL;
 	*pkey = _pkey;
-	return 1;
+	return -1;
 }
 
 static int ssl_sample_verify_callback(int preverify_ok, X509_STORE_CTX *x509)
@@ -127,7 +178,8 @@ static int32_t ssl_sample_init(void)
 		return -1;
 	}
 	
-	SSL_CTX_set_client_cert_cb(ctx, ssl_sample_client_cert_cb);
+	//SSL_CTX_set_client_cert_cb(ctx, ssl_sample_client_cert_cb);
+	SSL_set_cert_cb(ssl, ssl_simple_cert_cb, NULL);
 	/*
 	 * SSL_set_verifyにより独自の署名検証を行うことができる。
 	 * 検証は第三引数のコールバックで行う。SSL_VERIFY_PEERは
@@ -146,9 +198,9 @@ static int32_t ssl_sample_init(void)
 	switch (ret) {
 	case 0:
 		printf("SSL error %d\n", SSL_get_error(ssl, ret));
-    		SSL_free(ssl);
-    		SSL_CTX_free(ctx);
-		return -1;
+    		//SSL_free(ssl);
+    		//SSL_CTX_free(ctx);
+		//return -1;
 	case 1:
 		break;
 	default:
