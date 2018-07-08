@@ -15,6 +15,9 @@ sslのクライアント認証時におけるEVP_KEYに相当するRSAの秘密�
 EVP_KEY(クライアント秘密鍵)を引数にしている。これはクライアント秘密鍵をDRAMに展開
 しないと実現できない。
 
+https://stackoverflow.com/questions/46085662/openssl-engine-rsa-callbacks-behavior-in-fips-mode
+上も読んでおきたい
+
 ### 参考サイト
 - https://www.mail-archive.com/openssl-dev@openssl.org/msg04370.html
 
