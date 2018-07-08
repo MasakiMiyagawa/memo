@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Generate private key
-openssl genrsa -aes128 2048 > client.key
+#openssl genrsa -aes128 2048 > client.key
+openssl genrsa 2048 > client.key
 # Generate public key
 openssl req -new -key client.key > client.csr
 echo " gen pubkey is done "

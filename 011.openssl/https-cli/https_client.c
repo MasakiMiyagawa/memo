@@ -18,7 +18,7 @@
 
 static char buf[1024*1024] = {0};
 static const char crt_file[] = "client.crt";
-static const char key_file[] = "client.key";
+static const char key_file[] = "client_dmy.key";
 static const char *service = "https";
 static int32_t sock;
 static SSL *ssl;
@@ -26,13 +26,13 @@ static SSL_CTX *ctx;
 static char *host = "localhost";
 static char *path = "";
 
+extern void replace_rsa_method(RSA *rsa);
 static int ssl_simple_cert_cb(SSL *ssl, void *arg)
 {
 	int i;
 	X509 *_x509 = NULL;
 	EVP_PKEY *_pkey = NULL;
 	RSA *rsa;
-	int *flags;
 	FILE* f = fopen(crt_file, "r");
     	if (f == NULL) {
 		perror("fopen:");
@@ -67,10 +67,10 @@ static int ssl_simple_cert_cb(SSL *ssl, void *arg)
 
 	fclose(f);
 	f = NULL;
+
 	SSL_use_certificate(ssl, _x509);
 	rsa = _pkey->pkey.rsa;
-	flags = &(rsa->meth->flags);
-	*flags |= RSA_METHOD_FLAG_NO_CHECK|RSA_FLAG_EXT_PKEY;
+	replace_rsa_method(rsa);
 	printf("return %d \n", SSL_use_PrivateKey(ssl, _pkey));
 	return 1;
 }

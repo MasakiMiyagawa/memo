@@ -1,4 +1,4 @@
-SRCS = https_client.c
+SRCS = rsa_method.c https_client.c
 TARGET = https_client
 OBJS = ${SRCS:.c=.o}
 CC ?= gcc
