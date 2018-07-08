@@ -6,10 +6,76 @@
 - https://wiki.openssl.org/index.php/Simple_TLS_Server
 - http://blog.sarabande.jp/post/82087204080
 
+## sslにおけるクライアント証明書署名処理を移譲する方法を調べる(調査中)
+ブランチfeature/using_tpm_pkeyで実施中。
+### 背景
+sslのクライアント認証時におけるEVP_KEYに相当するRSAの秘密鍵を耐タンパ性を持つ
+デバイスからDRAMへ展開したくない。opensslを使った場合、SSL_CTX_set_client_cert_cb
+で登録するコールバック関数(Client証明時にコールバックされる)はX509証明書と
+EVP_KEY(クライアント秘密鍵)を引数にしている。これはクライアント秘密鍵をDRAMに展開
+しないと実現できない。
+
+### 参考サイト
+- https://www.mail-archive.com/openssl-dev@openssl.org/msg04370.html
+
+古い記事だが上記は類似した問題へのQAとなっている。
+smartcardにRSAの鍵が置かれているケースである。質問者はfake private keyを渡す実装を
+試している。しかしX509証明書に関連付けられたPublicyKeyとfake private keyの違いにより
+エラーが出てしまう模様。
+
+上記はEVP_PKEYにポイントされている構造体オブジェクトRSA_METHODのflagsに
+RSA_METHOD_FLAG_NO_CHECKを入れると秘密鍵と公開鍵の整合性のチェックはされなくなる。
+
+しかし、fake private keyを用いた署名？(rsa_priv_enc())でfake private keyの鍵を使っている
+らしく、SSL通信が正しくできない。上記参考サイトでもRSA_METHODの置き換えが必要と
+言われているがどう実装すべきか検討が必要である。
+
+### X509フォーマット
+クライアント送信時に標準出力しているX509に対し、なぜRSAによる暗号化が必要なのか？
+```
+    Signature Algorithm: sha256WithRSAEncryption
+         42:1d:00:a2:a2:26:93:44:55:3f:6b:1f:8c:cd:7e:c1:5f:fa:
+         59:ba:d4:e6:68:02:c5:ab:db:1a:9a:af:f3:3b:12:d4:8c:9f:
+         91:e0:08:a2:4f:69:ee:90:ea:ea:07:31:3f:d8:ab:8d:0c:d9:
+         1e:0a:e8:f1:55:ce:b3:a4:03:14:7e:26:0e:10:3e:b3:0c:a8:
+         e5:9e:3e:ed:78:2a:2e:cc:25:43:48:32:e8:f7:15:5d:1f:13:
+         41:62:f7:0e:85:aa:99:b3:cb:22:67:f5:2b:13:d7:03:a7:b2:
+         ff:1b:a5:0e:a0:b5:b4:ab:5f:1c:5f:ae:3d:ab:e2:3b:80:3d:
+         3c:49:ad:59:88:5b:5f:3f:cc:1e:bf:17:75:99:60:0d:d1:ea:
+         ab:c6:dd:90:03:b1:97:91:c0:85:ff:1d:98:15:90:d8:65:81:
+         33:e6:47:f5:c0:37:76:c4:9d:c1:39:88:ec:1e:2f:32:91:28:
+         a4:61:07:97:a4:d6:d6:14:71:9e:26:2f:89:b3:08:e3:b7:39:
+         bd:b5:0f:0d:3c:42:d1:23:0d:0d:51:5a:14:8d:13:d2:60:db:
+         77:6d:06:a5:f4:d0:99:95:96:0a:5e:76:68:88:b0:88:b6:02:
+         6e:80:e2:c6:e7:65:9e:87:a7:62:92:0f:a3:bf:20:87:3c:cf:
+         e8:10:79:e0
+```
+というように出力されている場合、これはすでに秘密鍵で暗号化されているものでは？
+それともただのsha256のhash？の平文？だとすると暗号化はセッションの中で
+行われる？？？
+
+- 証明書
+-- バージョン Version: 1 (0x0)
+-- 通し番号 Serial Number: 13762440515818531701 (0xbefe02bb8bceab75)
+-- アルゴリズムID Signature Algorithm: sha256WithRSAEncryption
+-- 発行者 Issuer: C=JP, ST=Some-State, O=Internet Widgits Pty Ltd
+-- 有効期間 Validity
+--- 開始 Not Before: Jul  8 06:23:40 2018 GMT
+--- 満了 Not After : Nov  8 06:23:40 3017 GMT
+-- 主体者 Subject: C=JP, ST=Some-State, O=Internet Widgits Pty Ltd
+-- 主体者の公開鍵情報 Subject Public Key Info
+--- 公開鍵アルゴリズム Public Key Algorithm: rsaEncryption
+--- 主体者の公開鍵  Public-Key: (2048 bit) Modulus:
+-- 発行者の一意な識別子 (予備)
+-- 主体者の一意な識別子 (予備)
+-- 拡張 (予備)
+- 証明書の署名アルゴリズム Signature Algorithm: sha256WithRSAEncryption
+- 証明書の署名 42:1d:00:a2:a2:26:93
+
+
 ## httpsクライアントを作る
 
 ### ubuntu 16.04 パッケージ準備
-
 ```
 $sudo aptitude install libssl-dev
 ```
