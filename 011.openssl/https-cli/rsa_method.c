@@ -67,8 +67,22 @@ static int dmy_pri_enc(int flen, const unsigned char *from,
 static int dmy_pri_enc(int flen, const unsigned char *from,
                                    unsigned char *to, RSA *rsa, int padding)
 {
+	int ret;
+	int i;
+	char *p = from;
 	printf("%s %s\n", __func__, rsa->meth->name);
-	return org->rsa_priv_enc(flen, from, to, rsa, padding);
+	for (i = 0; i < 256; i++) {
+		printf("0x%x ", (*p & 0xFF));
+		p++;
+	}
+	ret = org->rsa_priv_enc(flen, from, to, rsa, padding);
+	printf("\n-----\n");
+	p = to;
+	for (i = 0; i < 256; i++) {
+		printf("0x%x ", (*p & 0xFF));
+		p++;
+	}
+	return ret;
 }
 #endif
 
